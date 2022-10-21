@@ -1,0 +1,49 @@
+0.2.1
+used webbrowser python module to manage WebPositive
+the old "open" command did not allow to open links with & character
+so WebPositive must be present
+
+0.3
+New database system
+on startup database consistency check + fixes
+Stats info
+newspaper list shows new news near title
+trash section where you can save news from removed feed
+you can empty the trashbin
+
+0.3.1
+Fixed launch of web browser at error on loading module:
+you will be redirected to the download pages of lacking modules
+Added "Stop download" button when downloading all feeds
+horizontal scrollbars
+pseudo text installer (run install.sh from a terminal)
+
+0.4
+Added Settings menu for managing browsers(when they'll be available), and a timer for autoupdate from feeds
+config.ini added to store settings, autocreated if not present
+
+0.4.1
+fixed select browser, no restart needed
+added "file panel" to choose the file graphically
+
+0.5
+threadized feed downloads, download time decreased
+
+06
+threadized in a single thread most database access jobs, separated window for download information, some small improvements.
+moveable separators
+
+0.7.1
+adaptations to haiku R1 B1/2 filesystem layout
+
+0.8
+reverted to 0.4.1, added separator-sliders
+
+0.8.1
+Colored paper if new news
+
+0.8.2
+Small changes in installer script adapted to Haiku R1/beta 2 and 3
+
+0.8.3
+Fixed dimensions about window
