@@ -11,22 +11,22 @@ else
 	echo "Proceeding..."
 	ret3=1
 fi
-echo "Now checking for Bethon-0.5.4.1.tar.gz presence"
-if [ -e Bethon-0.5.4.1.tar.gz ]
+echo "Now checking for Bethon.tar.gz presence"
+if [ -e Bethon.tar.gz ]
 then
-	tar -xf Bethon-0.5.4.1.tar.gz
-	cd Bethon-0.5.4.1
+	tar -xf Bethon.tar.gz
+	cd Bethon
 	make && make install
 	ret2=$?
 	cd ..
 else
-	echo "Bethon 0.5.4.1.tar.gz not present in this folder..."
+	echo "Bethon.tar.gz not present in this folder..."
 	echo "Do you wish to git clone Bethon to your system? (type y or n)"
 	read text
 	if [ $text == "y" ]
 	then
-	git clone https://github.com/tmtfx/Bethon-0.5.4.1
-	cd Bethon-0.5.4.1
+	git clone https://github.com/tmtfx/Bethon
+	cd Bethon
 	make && make install
 	ret2=$?
 	cd ..
