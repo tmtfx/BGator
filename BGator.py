@@ -1,5 +1,7 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
-from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont
+from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont,InterfaceDefs
+from Be.GraphicsDefs import *
+from Be.View import B_FOLLOW_NONE,set_font_mask
 from Be.Alert import alert_type
 from Be.InterfaceDefs import border_style
 from Be.ListView import list_view_type
@@ -10,20 +12,25 @@ from Be import AppDefs
 from Be import Entry
 from Be.Entry import entry_ref, get_ref_for_path
 
-class NewsPaper(BListItem):
+class ScrollViewItems(BListItem):
 	nocolor = (0, 0, 0, 0)
 
-	def __init__(self, name,color):
+	def __init__(self, name,color,type):
 		self.name = name
 		self.color=color
+		self.type=type
 		BListItem.__init__(self)
 		self.newnews=false
 
 	def DrawItem(self, owner, frame, complete):
 		if self.IsSelected() or complete:
-			color = (200,200,200,255)
-			owner.SetHighColor(180,180,180,255)
-			owner.SetLowColor(200,200,200,255)
+			#color = (200,200,200,255)
+			if type == True:
+				owner.SetHighColor(0,180,0,255)
+				owner.SetLowColor(200,200,200,255)
+			else:
+				owner.SetHighColor(0,0,180,255)
+				owner.SetLowColor(200,200,200,255)
 			owner.FillRect(frame)
 			owner.SetHighColor(0,0,0,255)
 			owner.SetLowColor(255,255,255,255)
@@ -61,7 +68,7 @@ class GatorWindow(BWindow):
 		('Help', ((8, 'Help'),(3, 'About')))
 		)
 	def __init__(self):
-		BWindow.__init__(self, BRect(100,100,900,750), "BGator 2!", window_type.B_TITLED_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)
+		BWindow.__init__(self, BRect(100,100,900,750), "BGator is back", window_type.B_TITLED_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_MODAL_WINDOW
 		bounds=self.Bounds()
 		self.bckgnd = BView(self.Bounds(), "background_View", 8, 20000000)
 		bckgnd_bounds=self.bckgnd.Bounds()
@@ -88,15 +95,37 @@ class GatorWindow(BWindow):
 		self.remBtn = BButton(BRect(62,8,112,48),'RemoveButton','⊖',BMessage(2))
 		self.remBtn.SetFont(bf)
 		self.box.AddChild(self.remBtn,None)
-		self.getBtn = BButton(BRect(116,8,self.box.Bounds().Width() / 3,48),'GetNewsButton','⇩',BMessage(6))
+		boxboundsw=self.box.Bounds().Width()
+		boxboundsh=self.box.Bounds().Height()
+		self.getBtn = BButton(BRect(116,8,boxboundsw / 3,48),'GetNewsButton','⇩',BMessage(6))
 		self.getBtn.SetFont(bf)
 		self.box.AddChild(self.getBtn,None)
 		#bf.SetSize(oldSize)
 		self.box.SetFont(bf)
-		self.Paperlist=ScrollView(BRect(8 , 56, self.box.Bounds().Width() / 3 , self.box.Bounds().Height() - 8 ), 'ScrollView')
+		self.Paperlist = ScrollView(BRect(8 , 56, boxboundsw / 3 , boxboundsh - 8 ), 'NewsPapersScrollView')
 		self.box.AddChild(self.Paperlist.sv, None)
+		self.NewsList = ScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -8 , boxboundsh / 1.8 ), 'NewsListScrollView')
+		self.box.AddChild(self.NewsList.sv,None)
+		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 8)
+		self.outbox_preview=BBox(txtRect,"previewframe",0x0202|0x0404,border_style.B_FANCY_BORDER)
+		self.box.AddChild(self.outbox_preview,None)
+		innerRect= BRect(8,8,txtRect.Width()-8,txtRect.Height())
+		self.NewsPreView = BTextView(BRect(2,2, self.outbox_preview.Bounds().Width()-2,self.outbox_preview.Bounds().Height()-2), 'NewsTxTView', innerRect , B_FOLLOW_NONE,2000000)
+		#fon=BFont()
+		#sameProperties=0
+		#colore=rgb_color()
+		#sameColor=True
+		#self.NewsTextView.GetFontAndColor(fon,sameProperties,colore,sameColor)
+		#print("Rosso:",colore.red,"Verde:",colore.green,"Blu:",colore.blue,"Alfa:",colore.alpha)
+		#colore.set_to(255,255,255,255)
+		#print("Rosso:",colore.red,"Verde:",colore.green,"Blu:",colore.blue,"Alfa:",colore.alpha)
+		#self.NewsTextView.SetFontAndColor(fon,set_font_mask.B_FONT_ALL, colore)
+		self.outbox_preview.AddChild(self.NewsPreView,None)
+		
+		
 		self.bckgnd.AddChild(self.bar, None)
 		self.bckgnd.AddChild(self.box, None)
+
 		
 
 	def MessageReceived(self, msg):
@@ -110,6 +139,10 @@ class GatorWindow(BWindow):
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
 		BWindow.MessageReceived(self, msg)
+		
+	def FrameResized(self,x,y):
+		#self.ResizeToPreferred()
+		self.ResizeTo(800,650)
 
 
 	def QuitRequested(self):
