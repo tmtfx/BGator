@@ -1,6 +1,7 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
-from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont,InterfaceDefs
+from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
 from Be.GraphicsDefs import *
+from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
 from Be.Alert import alert_type
 from Be.InterfaceDefs import border_style
@@ -11,6 +12,27 @@ from Be import AppDefs
 
 from Be import Entry
 from Be.Entry import entry_ref, get_ref_for_path
+
+import configparser,webbrowser, feedparser
+
+Config=configparser.ConfigParser()
+def ConfigSectionMap(section):
+    dict1 = {}
+    options = Config.options(section)
+    for option in options:
+        try:
+            dict1[option] = Config.get(section, option)
+            if dict1[option] == -1:
+                DebugPrint("skip: %s" % option)
+        except:
+            print("exception on %s!" % option)
+            dict1[option] = None
+    return dict1
+
+def openlink(link):
+	global tab,name
+	webbrowser.get(name).open(link,tab,False)
+
 
 class ScrollViewItems(BListItem):
 	nocolor = (0, 0, 0, 0)
@@ -68,6 +90,7 @@ class GatorWindow(BWindow):
 		('Help', ((8, 'Help'),(3, 'About')))
 		)
 	def __init__(self):
+		global tab,name
 		BWindow.__init__(self, BRect(100,100,900,750), "BGator is back", window_type.B_TITLED_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_MODAL_WINDOW
 		bounds=self.Bounds()
 		self.bckgnd = BView(self.Bounds(), "background_View", 8, 20000000)
@@ -111,6 +134,57 @@ class GatorWindow(BWindow):
 		self.box.AddChild(self.outbox_preview,None)
 		innerRect= BRect(8,8,txtRect.Width()-8,txtRect.Height())
 		self.NewsPreView = BTextView(BRect(2,2, self.outbox_preview.Bounds().Width()-2,self.outbox_preview.Bounds().Height()-2), 'NewsTxTView', innerRect , B_FOLLOW_NONE,2000000)
+		
+		
+		perc=BPath()
+		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+		perc.Path()
+		datapath=BDirectory(perc.Path()+"/BGator2")
+		ent=BEntry(datapath,perc.Path()+"/BGator2")
+		if not ent.Exists():
+			datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
+		ent.GetPath(perc)
+		confile=BPath(perc.Path()+'/config.ini','',False)
+		ent=BEntry(confile.Path())
+		if ent.Exists():
+			print("il file esiste carico tutto")
+			Config.read(confile.Path())
+			path=ConfigSectionMap("Browser")['path']
+			name=ConfigSectionMap("Browser")['name']
+			type=ConfigSectionMap("Browser")['type']
+			buleano=ConfigSectionMap("Browser")['newtab']
+			if buleano:
+				print("tab is 2")
+				tab=2
+			else:
+				print("tab is 1")
+				tab=1
+			tmpent=BEntry(path,False)
+			if tmpent.Exists():
+				if type=='Generic':
+					webbrowser.register(name,None,webbrowser.GenericBrowser(path))
+				elif type=='Mozilla':
+					webbrowser.register(name,None,webbrowser.Mozilla(path))
+				elif type=='Konqueror':
+					webbrowser.register(name,None,webbrowser.Konqueror(path)) # no pass path
+				elif type=='Opera':
+					webbrowser.register(name,None,webbrowser.Opera(path)) # no pass path
+		else:
+			find_directory(directory_which.B_SYSTEM_APPS_DIRECTORY,perc,False,None)
+			ent=BEntry(perc.Path()+"/WebPositive")
+			if ent.Exists():
+				cfgfile = open(confile.Path(),'w')
+				Config.add_section('Browser')
+				Config.set('Browser','path', perc.Path()+"/WebPositive")
+				Config.set('Browser','name', "WebPositive")
+				Config.set('Browser','type', "Generic")
+				Config.set('Browser','newtab', "True")
+				name="WebPositive"
+				tab=2
+				Config.write(cfgfile)
+				cfgfile.close()
+				Config.read(confile.Path())
+				webbrowser.register( "WebPositive",None,webbrowser.GenericBrowser(perc.Path()+"/WebPositive"))
 		#fon=BFont()
 		#sameProperties=0
 		#colore=rgb_color()
@@ -159,7 +233,6 @@ def main():
     global be_app
     be_app = App()
     be_app.Run()
-    print('so said dolphins...')
  
 if __name__ == "__main__":
     main()
