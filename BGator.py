@@ -37,10 +37,9 @@ def openlink(link):
 class ScrollViewItems(BListItem):
 	nocolor = (0, 0, 0, 0)
 
-	def __init__(self, name,color,type):
+	def __init__(self, name,color):
 		self.name = name
 		self.color=color
-		self.type=type
 		BListItem.__init__(self)
 		self.newnews=false
 
@@ -71,11 +70,24 @@ class ScrollViewItems(BListItem):
 		else:
 			owner.DrawString(self.name,None)
 
-class ScrollView:
+
+class NewsScrollView:
 	HiWhat = 32 #Doppioclick
 	def __init__(self, rect, name):
 		self.lv = BListView(rect, name, list_view_type.B_SINGLE_SELECTION_LIST)
-		self.sv = BScrollView('ScrollView', self.lv)#, 0x0202,0,False,False, border_style.B_FANCY_BORDER)#|0x1030
+		self.sv = BScrollView('NewsScrollView', self.lv)#, 0x0202,0,False,False, border_style.B_FANCY_BORDER)#|0x1030
+
+	def topview(self):
+		return self.sv
+
+	def listview(self):
+		return self.lv
+
+class PapersScrollView:
+	HiWhat = 33 #Doppioclick
+	def __init__(self, rect, name):
+		self.lv = BListView(rect, name, list_view_type.B_SINGLE_SELECTION_LIST)
+		self.sv = BScrollView('PapersScrollView', self.lv)#, 0x0202,0,False,False, border_style.B_FANCY_BORDER)#|0x1030
 
 	def topview(self):
 		return self.sv
@@ -125,9 +137,9 @@ class GatorWindow(BWindow):
 		self.box.AddChild(self.getBtn,None)
 		#bf.SetSize(oldSize)
 		self.box.SetFont(bf)
-		self.Paperlist = ScrollView(BRect(8 , 56, boxboundsw / 3 , boxboundsh - 8 ), 'NewsPapersScrollView')
+		self.Paperlist = PapersScrollView(BRect(8 , 56, boxboundsw / 3 , boxboundsh - 8 ), 'NewsPapersScrollView')
 		self.box.AddChild(self.Paperlist.sv, None)
-		self.NewsList = ScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -8 , boxboundsh / 1.8 ), 'NewsListScrollView')
+		self.NewsList = NewsScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -8 , boxboundsh / 1.8 ), 'NewsListScrollView')
 		self.box.AddChild(self.NewsList.sv,None)
 		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 38)
 		self.outbox_preview=BBox(txtRect,"previewframe",0x0202|0x0404,border_style.B_FANCY_BORDER)
