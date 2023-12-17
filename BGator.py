@@ -129,13 +129,12 @@ class GatorWindow(BWindow):
 		self.box.AddChild(self.Paperlist.sv, None)
 		self.NewsList = ScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -8 , boxboundsh / 1.8 ), 'NewsListScrollView')
 		self.box.AddChild(self.NewsList.sv,None)
-		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 8)
+		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 38)
 		self.outbox_preview=BBox(txtRect,"previewframe",0x0202|0x0404,border_style.B_FANCY_BORDER)
 		self.box.AddChild(self.outbox_preview,None)
 		innerRect= BRect(8,8,txtRect.Width()-8,txtRect.Height())
 		self.NewsPreView = BTextView(BRect(2,2, self.outbox_preview.Bounds().Width()-2,self.outbox_preview.Bounds().Height()-2), 'NewsTxTView', innerRect , B_FOLLOW_NONE,2000000)
-		
-		
+	
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 		perc.Path()
@@ -194,8 +193,15 @@ class GatorWindow(BWindow):
 		#colore.set_to(255,255,255,255)
 		#print("Rosso:",colore.red,"Verde:",colore.green,"Blu:",colore.blue,"Alfa:",colore.alpha)
 		#self.NewsTextView.SetFontAndColor(fon,set_font_mask.B_FONT_ALL, colore)
-		self.outbox_preview.AddChild(self.NewsPreView,None)
 		
+		btnswidth=round((boxboundsw - 8 - (8 + boxboundsw / 3) -8 - 8)/3,2)
+		self.markUnreadBtn = BButton(BRect(round(8 + boxboundsw / 3, 2),round(boxboundsh - 36, 2),round(8 + boxboundsw / 3 + btnswidth, 2) ,round(boxboundsh - 8,2)),'markUnreadButton','Mark as Unread',BMessage(9))
+		self.openBtn = BButton(BRect(round(boxboundsw-8-btnswidth, 2),round( boxboundsh - 36, 2),round(boxboundsw-8, 2),round(boxboundsh-8, 2)),'openButton','Open with browser',BMessage(1))
+		self.markReadBtn = BButton(BRect(round(8 + boxboundsw / 3 + btnswidth + 8, 2),round( boxboundsh - 36, 2),round(boxboundsw-16-btnswidth, 2),round(boxboundsh-8, 2)),'markReadButton','Mark as Read',BMessage(1))
+		self.outbox_preview.AddChild(self.NewsPreView,None)
+		self.box.AddChild(self.markUnreadBtn,None)
+		self.box.AddChild(self.openBtn,None)
+		self.box.AddChild(self.markReadBtn,None)
 		
 		self.bckgnd.AddChild(self.bar, None)
 		self.bckgnd.AddChild(self.box, None)
