@@ -34,12 +34,12 @@ def openlink(link):
 	webbrowser.get(name).open(link,tab,False)
 
 
-class ScrollViewItems(BListItem):
+class ScrollViewItem(BListItem):
 	nocolor = (0, 0, 0, 0)
 
-	def __init__(self, name,color):
+	def __init__(self, path,address):
 		self.name = name
-		self.color=color
+		self.color=self.nocolor
 		BListItem.__init__(self)
 		self.newnews=false
 
@@ -252,6 +252,8 @@ class GatorWindow(BWindow):
 					
 					
 	def PaperItemConstructor(self, perc):
+		
+		itm = ScrollViewItem(perc,link)
 		print(perc.Leaf())
 
 	def MessageReceived(self, msg):
