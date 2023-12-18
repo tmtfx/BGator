@@ -217,8 +217,42 @@ class GatorWindow(BWindow):
 		
 		self.bckgnd.AddChild(self.bar, None)
 		self.bckgnd.AddChild(self.box, None)
-
 		
+		perc=BPath()
+		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+		perc.Path()
+		datapath=BDirectory(perc.Path()+"/BGator2/Papers")
+		ent=BEntry(datapath,perc.Path()+"/BGator2/Papers")
+		if not ent.Exists():
+			datapath.CreateDirectory(perc.Path()+"/BGator2/Papers", datapath)
+		ent.GetPath(perc)
+		self.UpdatePapers()
+		
+	def UpdatePapers(self):
+		perc=BPath()
+		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+		perc.Path()
+		datapath=BDirectory(perc.Path()+"/BGator2/Papers")
+		ent=BEntry(datapath,perc.Path()+"/BGator2/Papers")
+		if not ent.Exists():
+			datapath.CreateDirectory(perc.Path()+"/BGator2/Papers", datapath)
+		ent.GetPath(perc)
+		print(perc.Path())
+		#datapath=BDirectory(perc.Path()+"/")
+		if datapath.CountEntries() > 0:
+			print("num entries:",datapath.CountEntries())
+			datapath.Rewind()
+			ret=False
+			while not ret:
+				evalent=BEntry()
+				ret=datapath.GetNextEntry(evalent)
+				if not ret:
+					evalent.GetPath(perc)
+					self.PaperItemConstructor(perc)
+					
+					
+	def PaperItemConstructor(self, perc):
+		print(perc.Leaf())
 
 	def MessageReceived(self, msg):
 		if msg.what == 8:
