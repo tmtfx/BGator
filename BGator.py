@@ -1,6 +1,6 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
-from Be import BNode, BStringItem
+from Be import BNode, BStringItem, BFile
 from Be.GraphicsDefs import *
 from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
@@ -244,7 +244,7 @@ class GatorWindow(BWindow):
 		self.box.AddChild(self.outbox_preview,None)
 		innerRect= BRect(8,8,txtRect.Width()-8,txtRect.Height())
 		self.NewsPreView = BTextView(BRect(2,2, self.outbox_preview.Bounds().Width()-2,self.outbox_preview.Bounds().Height()-2), 'NewsTxTView', innerRect , B_FOLLOW_NONE,2000000)
-	
+		self.NewsPreView.MakeEditable(False)
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 		perc.Path()
@@ -447,9 +447,30 @@ class GatorWindow(BWindow):
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
 		elif msg.what == self.Paperlist.PaperSelection:
-			self.gjornaaltolet()
-		elif msg.what == self.Paperlist.PaperSelection:
-			print("selezionata notizia")
+			if self.Paperlist.lv.CurrentSelection()>-1:
+				self.gjornaaltolet()
+		elif msg.what == self.NewsList.NewsSelection:
+			if self.NewsList.lv.CurrentSelection()>-1:
+				curit = self.NewsList.lv.CurrentSelection()
+				Nitm = self.NewsList.lv.ItemAt(curit)
+				if Nitm.unread:
+					Nitm.unread=False
+					#TODO: writeattr
+				NFile=BFile(Nitm.entry,0)
+				r,s=NFile.GetSize()
+				if not r:
+					data=b""
+					data,size=NFile.Read(s)
+					###### scrivi testo su anteprima notizia ######
+					self.NewsPreView.SetText(NFile,0,s,None)
+				else:
+					print("sembra che non ci sia anteprima qui")
+					###### scrivi su anteprima notizia che non c'è alcun riassunto di questa notizia ##########
+			else:
+				#self.NewsPreView.Delete()#SetText("",None)
+				self.NewsPreView.SelectAll()
+				self.NewsPreView.Clear()
+			
 		BWindow.MessageReceived(self, msg)
 		
 	def FrameResized(self,x,y):
