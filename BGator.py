@@ -1,6 +1,6 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
-from Be import BNode, BStringItem, BFile
+from Be import BNode, BStringItem, BFile, BPoint
 from Be.GraphicsDefs import *
 from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
@@ -64,9 +64,9 @@ def get_type_string(value):
 
 
 class NewsItem(BListItem):
-	def __init__(self, title, entry, link, unread):
+	def __init__(self, title, entry, link, unread,consist):
 		self.name=title
-		print(title)
+		self.consistent=consist
 		self.entry = entry
 		self.link = link
 		self.unread = unread
@@ -84,12 +84,16 @@ class NewsItem(BListItem):
 		#else:	
 		#	self.font = be_plain_font
 		#	owner.SetFont(self.font)
-		owner.MovePenTo(5,frame.Height()-5)
+		owner.MovePenTo(5,frame.bottom-5)
 		if self.unread:
 			owner.SetFont(be_bold_font)
 		else:
 			owner.SetFont(be_plain_font)
 		owner.DrawString(self.name,None)
+		if not self.consistent:
+			sp=BPoint(3,frame.bottom-((frame.bottom-frame.top)/2))
+			ep=BPoint(self.Width()-3,((frame.bottom-frame.top)/2))
+			owner.StrokeLine(sp,ep)
 		owner.SetLowColor(255,255,255,255)
 		
 
@@ -195,6 +199,8 @@ class PapersScrollView:
 
 
 class GatorWindow(BWindow):
+	global tmpNitm
+	tmpNitm=[]
 	Menus = (
 		('File', ((1, 'Add Paper'),(2, 'Remove Paper'),(None, None),(int(AppDefs.B_QUIT_REQUESTED), 'Quit'))),('News', ((6, 'Get News'),(4, 'Mark all read'),(5, 'Clear news'))),
 		('Help', ((8, 'Help'),(3, 'About')))
@@ -256,17 +262,14 @@ class GatorWindow(BWindow):
 		confile=BPath(perc.Path()+'/config.ini','',False)
 		ent=BEntry(confile.Path())
 		if ent.Exists():
-			#print("il file esiste carico tutto")
 			Config.read(confile.Path())
 			path=ConfigSectionMap("Browser")['path']
 			name=ConfigSectionMap("Browser")['name']
 			type=ConfigSectionMap("Browser")['type']
 			buleano=ConfigSectionMap("Browser")['newtab']
 			if buleano:
-				#print("tab is 2")
 				tab=2
 			else:
-				#print("tab is 1")
 				tab=1
 			tmpent=BEntry(path,False)
 			if tmpent.Exists():
@@ -407,19 +410,26 @@ class GatorWindow(BWindow):
 						print("aggiungo file")
 
 	def NewsItemConstructor(self,entry):
+		
 	#def __init__(self, title, entry, link, unread):
-		perc=BPath()
+		perc = BPath()
 		entry.GetPath(perc)
-		nf=BNode(perc.Path())
-		attributes=attr(nf)
-		addnews=False
+		nf = BNode(perc.Path())
+		attributes = attr(nf)
+		addnews = False
+		blink = False
+		bunread = False
+		btitle = False
 		for element in attributes:
 			if element[0] == "link":
 					link = element[2][0]
+					blink = True
 			if element[0] == "Unread":
 					unread = element[2][0]
+					bunread = True
 			if element[0] == "title":
 					title = element[2][0]
+					btitle = True
 
 		try:
 			type(link)
@@ -429,12 +439,25 @@ class GatorWindow(BWindow):
 			addnews=True
 		except:
 			print("unconsistent news")
-
+			
+		
 		if addnews:
-			print("Aggiungo la news")
-			global tmpNitm
-			tmpNitm=NewsItem(title,entry,link,unread)
-			self.NewsList.lv.AddItem(tmpNitm)
+			consist=True
+			tmpNitm.append(NewsItem(title,entry,link,unread,consist))
+			self.NewsList.lv.AddItem(tmpNitm[-1])
+		else:
+			consist=False
+			if not blink:
+				link = ""
+			if not bunread:
+				unread = False
+			if not btitle:
+				if link == "":
+					title = "No Title and no link"
+				else:
+					title = link
+			tmpNitm.append(NewsItem(title,entry,link,unread,consist))
+			self.NewsList.lv.AddItem(tmpNitm[-1])
 			
 	def MessageReceived(self, msg):
 		if msg.what == 8:
