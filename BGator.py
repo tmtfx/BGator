@@ -470,6 +470,18 @@ class GatorWindow(BWindow):
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
 		elif msg.what == self.Paperlist.PaperSelection:
+			print("svuoto lista news")
+			self.NewsList.lv.MakeEmpty()
+			if len(tmpNitm)>0:
+				for item in tmpNitm:
+					print("elimino elemento",item)
+					del item
+				tmpNitm.clear()
+				#i=len(tmpNitm)
+				#while i>-1:
+				#	tmpNitm[i]
+				#	i-=1
+			print("Lunghezza tmpNitm",len(tmpNitm))
 			if self.Paperlist.lv.CurrentSelection()>-1:
 				self.gjornaaltolet()
 		elif msg.what == self.NewsList.NewsSelection:
