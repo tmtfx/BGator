@@ -625,18 +625,24 @@ class GatorWindow(BWindow):
 				else:
 					datapath.CreateDirectory(perc.Path()+"/BGator2/Papers/"+dirname,datapath)
 					nd=BNode(entr)
-					print("risultato di lock",nd.Lock())
 					givevalue=bytes(feedaddr,'utf-8')
 					nd.WriteAttr("address",TypeConstants.B_STRING_TYPE,0,givevalue)
-					nd.Unlock()
+					attributes=attr(nd)
+					pirc=BPath()
+					entr.GetPath(pirc)
+					for element in attributes:
+						if element[0] == "address":
+							tmpPitm.append(PaperItem(pirc,element[2][0]))
+							self.Paperlist.lv.AddItem(tmpPitm[-1])
 				#controlla se il feed ha un titolo, se ce l'ha procedi
 				#controlla se esiste cartella chiamata titul&
 				#se non esiste creala e configurala con i suoi attributi
 				#se esiste e ha tutti gli attributi uguali non fare niente
 				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
 				#se esiste ma non ha tutti gli attributi scrivili
-			mupd=BMessage(542)
-			be_app.WindowAt(0).PostMessage(mupd)
+			#mupd=BMessage(542)
+			#be_app.WindowAt(0).PostMessage(mupd)
+
 		elif msg.what == 542:
 			self.UpdatePapers()
 
