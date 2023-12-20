@@ -112,10 +112,34 @@ class PaperItem(BListItem):
 		self.datapath=BDirectory(path.Path())
 		self.newscount=self.datapath.CountEntries()
 		fon=BFont()
-		print(fon.Size())
 		value=font_height()
 		fon.GetHeight(value)
 		print(value.ascent,value.descent,value.leading,"is descending the useful value to place the string?")
+#		perc=BPath()
+#		if self.newscount > 0:
+##			print("num entries:",datapath.CountEntries())
+#			self.datapath.Rewind()
+#			ret=False
+#			while not ret:
+#				evalent=BEntry()
+#				ret=self.datapath.GetNextEntry(evalent)
+#				if not ret:
+#					evalent.GetPath(perc)
+#					nf=BNode(perc.Path())
+#					attributes=attr(nf)
+#					for element in attributes:
+#						if element[0] == "Unread":
+#							unr=element[2][0]
+#							if unr:
+#								ret=True
+#								self.newnews=True
+#								break
+
+		BListItem.__init__(self)
+		
+
+	def DrawItem(self, owner, frame, complete):
+		self.newnews=False
 		perc=BPath()
 		if self.newscount > 0:
 #			print("num entries:",datapath.CountEntries())
@@ -135,11 +159,6 @@ class PaperItem(BListItem):
 								ret=True
 								self.newnews=True
 								break
-
-		BListItem.__init__(self)
-		
-
-	def DrawItem(self, owner, frame, complete):
 		if self.IsSelected() or complete:
 			#color = (200,200,200,255)
 			if self.newnews == True:
@@ -510,6 +529,7 @@ class GatorWindow(BWindow):
 					msg.AddString("path",pth.Path())
 					msg.AddBool("unreadValue",True)
 					msg.AddInt32("selected",curit)
+					msg.AddInt32("selectedP",self.Paperlist.lv.CurrentSelection())
 					be_app.WindowAt(0).PostMessage(msg)
 		elif msg.what == 83: # Mark Read/unread
 			e = msg.FindString("path")
@@ -535,7 +555,10 @@ class GatorWindow(BWindow):
 				#print(givevalue)
 				nd.WriteAttr("Unread",ninfo.type,0,givevalue)
 				itto=self.NewsList.lv.ItemAt(msg.FindInt32("selected"))
-				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),False)
+				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),True)
+				itto=self.Paperlist.lv.ItemAt(msg.FindInt32("selectedP"))
+				itto.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(msg.FindInt32("selectedP")),True)
+				
 			#####
 			#update Paperlist
 			#update NewsList
