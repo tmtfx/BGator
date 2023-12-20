@@ -183,7 +183,7 @@ class PaperItem(BListItem):
 		owner.MovePenTo(5,frame.Height()-5)#2
 		if self.newnews:
 			owner.SetFont(be_bold_font)
-			owner.DrawString("▶ "+self.name,None)
+			owner.DrawString(self.name,None)#"▶ "+
 		else:
 			owner.SetFont(be_plain_font)
 			owner.DrawString(self.name,None)
@@ -219,8 +219,22 @@ class PapersScrollView:
 
 	def listview(self):
 		return self.lv
-
-
+		
+class AddFeedWindow(BWindow):
+	def __init__(self):
+		BWindow.__init__(self, BRect(150,150,500,350), "BGator is back", window_type.B_FLOATING_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_BORDERED_WINDOW B_FLOATING_WINDOW
+		self.bckgnd = BView(self.Bounds(), "background_View", 8, 20000000)
+		bckgnd_bounds=self.bckgnd.Bounds()
+		self.AddChild(self.bckgnd,None)
+		self.box = BBox(bckgnd_bounds,"Underbox",0x0202|0x0404,border_style.B_FANCY_BORDER)
+		self.bckgnd.AddChild(self.box,None)
+	def FrameResized(self,x,y):
+		self.ResizeTo(350,200)
+	def QuitRequested(self):
+		self.Hide()
+		#self.Quit()
+		#return BWindow.QuitRequested(self)
+		
 class GatorWindow(BWindow):
 	global tmpNitm,tmpPitm
 	tmpPitm=[]
@@ -494,28 +508,15 @@ class GatorWindow(BWindow):
 					msg.AddString("path",pth.Path())
 					msg.AddBool("unreadValue",False)
 					msg.AddInt32("selected",curit)
-					#self.Looper().PostMessage(msg)
-					#print("Tot. Handlers:",)
-					#self.loop.PostMessage(msg)
-					#self.DispatchMessage(msg,
-					#be_app.DispatchMessage(msg,be_app.WindowAt(0))
-					#be_app.PostMessage(msg)
 					be_app.WindowAt(0).PostMessage(msg)
-					#self.Looper.PostMessage(msg)
-					#TODO: writeattr
 				NFile=BFile(Nitm.entry,0)
 				r,s=NFile.GetSize()
 				if not r:
-					#data=b""
-					#data,size=NFile.Read(s)
-					###### scrivi testo su anteprima notizia ######
 					self.NewsPreView.SetText(NFile,0,s,None)
 				else:
 					self.NewsPreView.SetText("There\'s no preview here",None)
-					#print("sembra che non ci sia anteprima qui")
-					###### scrivi su anteprima notizia che non c'è alcun riassunto di questa notizia ##########
 			else:
-				#self.NewsPreView.Delete()#SetText("",None)
+				#self.NewsPreView.Delete()
 				self.NewsPreView.SelectAll()
 				self.NewsPreView.Clear()
 		elif msg.what == 9:
@@ -532,6 +533,7 @@ class GatorWindow(BWindow):
 					msg.AddInt32("selected",curit)
 					msg.AddInt32("selectedP",self.Paperlist.lv.CurrentSelection())
 					be_app.WindowAt(0).PostMessage(msg)
+
 		elif msg.what == 10:
 			curit = self.NewsList.lv.CurrentSelection()
 			if curit>-1:
@@ -546,37 +548,23 @@ class GatorWindow(BWindow):
 					msg.AddInt32("selected",curit)
 					msg.AddInt32("selectedP",self.Paperlist.lv.CurrentSelection())
 					be_app.WindowAt(0).PostMessage(msg)
+
 		elif msg.what == 83: # Mark Read/unread
 			e = msg.FindString("path")
 			unrVal = msg.FindBool("unreadValue")
 			nd=BNode(e)
-			#while 1:
-			#	an = nd.GetNextAttrName()
-			#	if not an[1]:
-			#		a = an[0]
-			#	else:
-			#		a = None
-			#	if a is None:
-			#		nd.RewindAttrs()
-			#		break
-			#	else:
 			ninfo,ret=nd.GetAttrInfo("Unread")
 			if not ret:
 				if unrVal:
 					givevalue=bytearray(b'\x01')
 				else:
 					givevalue=bytearray(b'\x00')
-				#print(type(givevalue))
-				#print(givevalue)
 				nd.WriteAttr("Unread",ninfo.type,0,givevalue)
 				itto=self.NewsList.lv.ItemAt(msg.FindInt32("selected"))
 				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),True)
 				itto=self.Paperlist.lv.ItemAt(msg.FindInt32("selectedP"))
 				itto.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(msg.FindInt32("selectedP")),True)
-				
-			#####
-			#update Paperlist
-			#update NewsList
+
 		elif msg.what == self.NewsList.HiWhat:
 			curit=self.NewsList.lv.CurrentSelection()
 			if curit>-1:
@@ -584,10 +572,14 @@ class GatorWindow(BWindow):
 				if itto.link != "":
 					t = Thread(target=openlink,args=(itto.link,))
 					t.run()
-#					print("open the link")
 			
 		elif msg.what == self.Paperlist.HiWhat:
 			print("window with details and eventually per paper settings") #like pulse specified update
+		
+		elif msg.what == 1:
+			self.addfeedWindow = AddFeedWindow()
+			self.addfeedWindow.Show()
+
 		BWindow.MessageReceived(self, msg)
 		
 	def FrameResized(self,x,y):
@@ -596,6 +588,12 @@ class GatorWindow(BWindow):
 
 
 	def QuitRequested(self):
+		wnum = be_app.CountWindows()
+		if wnum>1:
+			i=wnum
+			while i>0:
+				be_app.WindowAt(i-1).Quit()
+				i-=1
 		return BWindow.QuitRequested(self)
 		
 class App(BApplication):
