@@ -1,6 +1,6 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
-from Be import BNode, BStringItem, BFile, BPoint
+from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler
 from Be.GraphicsDefs import *
 from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
@@ -199,7 +199,8 @@ class PapersScrollView:
 
 
 class GatorWindow(BWindow):
-	global tmpNitm
+	global tmpNitm,tmpPitm
+	tmpPitm=[]
 	tmpNitm=[]
 	Menus = (
 		('File', ((1, 'Add Paper'),(2, 'Remove Paper'),(None, None),(int(AppDefs.B_QUIT_REQUESTED), 'Quit'))),('News', ((6, 'Get News'),(4, 'Mark all read'),(5, 'Clear news'))),
@@ -315,50 +316,33 @@ class GatorWindow(BWindow):
 		self.box.AddChild(self.markUnreadBtn,None)
 		self.box.AddChild(self.openBtn,None)
 		self.box.AddChild(self.markReadBtn,None)
-		
+
 		self.bckgnd.AddChild(self.bar, None)
 		self.bckgnd.AddChild(self.box, None)
 		
-#		perc=BPath()
-#		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
-#		perc.Path()
-#		datapath=BDirectory(perc.Path()+"/BGator2/Papers")
-#		ent=BEntry(datapath,perc.Path()+"/BGator2/Papers")
-#		if not ent.Exists():
-#			datapath.CreateDirectory(perc.Path()+"/BGator2/Papers", datapath)
-#		ent.GetPath(perc)
-#		if datapath.CountEntries() > 0:
-#			print("num entries:",datapath.CountEntries())
-#			datapath.Rewind()
-#			ret=False
-#			while not ret:
-#				evalent=BEntry()
-#				ret=datapath.GetNextEntry(evalent)
-#				if not ret:
-#					evalent.GetPath(perc)
-#					nf=BNode(perc.Path())
-#					attributes=attr(nf)
-#					for element in attributes:
-#						if element[0] == "address":
-#							
-#							perc.Path()
-#							dir=element[2][0]
-#							global papero
-#							papero=ScrollViewItem(perc,dir)
-#							#self.Paperlist.lv.AddItem(BStringItem(perc.Leaf()))e
-#							self.Paperlist.lv.AddItem(papero)
-#					
 		self.UpdatePapers()
 		
-
-		
-	def UpdatePapers(self):
+	def ClearNewsList(self):
+			self.NewsList.lv.DeselectAll()
+			self.NewsList.lv.MakeEmpty()
+			if len(tmpNitm)>0:
+				for item in tmpNitm:
+					del item
+				tmpNitm.clear()
+	def ClearPaperlist(self):
 		if self.Paperlist.lv.CountItems()>0:
-			print("azzero lista")
 			self.Paperlist.lv.DeselectAll()
 			i=0
 			while i>self.Paperlist.lv.CountItems():
 				self.Paperlist.lv.RemoveItem(i)
+			self.NewsList.lv.MakeEmpty()
+			if len(tmpPitm)>0:
+				for item in tmpPitm:
+					del item
+				tmpPitm.clear()
+		
+	def UpdatePapers(self):
+		self.ClearPaperlist()
 		
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
@@ -387,9 +371,10 @@ class GatorWindow(BWindow):
 		attributes=attr(nf)
 		for element in attributes:
 			if element[0] == "address":
-				global itm
-				itm = PaperItem(perc,element[2][0])
-				self.Paperlist.lv.AddItem(itm)
+				#global itm
+				#itm = PaperItem(perc,element[2][0])
+				tmpPitm.append(PaperItem(perc,element[2][0]))
+				self.Paperlist.lv.AddItem(tmpPitm[-1])
 
 	def gjornaaltolet(self):
 			self.NewsPreView.SetText("",None)
@@ -407,7 +392,6 @@ class GatorWindow(BWindow):
 					rit=curpaper.datapath.GetNextEntry(itmEntry)
 					if not rit:
 						self.NewsItemConstructor(itmEntry)
-						print("aggiungo file")
 
 	def NewsItemConstructor(self,entry):
 		
@@ -470,18 +454,11 @@ class GatorWindow(BWindow):
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
 		elif msg.what == self.Paperlist.PaperSelection:
-			print("svuoto lista news")
 			self.NewsList.lv.MakeEmpty()
 			if len(tmpNitm)>0:
 				for item in tmpNitm:
-					print("elimino elemento",item)
 					del item
 				tmpNitm.clear()
-				#i=len(tmpNitm)
-				#while i>-1:
-				#	tmpNitm[i]
-				#	i-=1
-			print("Lunghezza tmpNitm",len(tmpNitm))
 			if self.Paperlist.lv.CurrentSelection()>-1:
 				self.gjornaaltolet()
 		elif msg.what == self.NewsList.NewsSelection:
@@ -490,21 +467,39 @@ class GatorWindow(BWindow):
 				Nitm = self.NewsList.lv.ItemAt(curit)
 				if Nitm.unread:
 					Nitm.unread=False
+					msg=BMessage(83)
+					pth=BPath()
+					Nitm.entry.GetPath(pth)
+					msg.AddString("path",pth.Path())
+					msg.AddBool("unreadValue",False)
+					#self.Looper().PostMessage(msg)
+					#print("Tot. Handlers:",)
+					#self.loop.PostMessage(msg)
+					#self.DispatchMessage(msg,
+					#be_app.DispatchMessage(msg,be_app.WindowAt(0))
+					#be_app.PostMessage(msg)
+					be_app.WindowAt(0).PostMessage(msg)
+					#self.Looper.PostMessage(msg)
 					#TODO: writeattr
 				NFile=BFile(Nitm.entry,0)
 				r,s=NFile.GetSize()
 				if not r:
-					data=b""
-					data,size=NFile.Read(s)
+					#data=b""
+					#data,size=NFile.Read(s)
 					###### scrivi testo su anteprima notizia ######
 					self.NewsPreView.SetText(NFile,0,s,None)
 				else:
-					print("sembra che non ci sia anteprima qui")
+					self.NewsPreView.SetText("There\'s no preview here",None)
+					#print("sembra che non ci sia anteprima qui")
 					###### scrivi su anteprima notizia che non c'è alcun riassunto di questa notizia ##########
 			else:
 				#self.NewsPreView.Delete()#SetText("",None)
 				self.NewsPreView.SelectAll()
 				self.NewsPreView.Clear()
+		elif msg.what == 83:
+			e = msg.FindString("path")
+			unrVal = msg.FindBool("unreadValue")
+			print(e,"set to",unrVal)
 			
 		BWindow.MessageReceived(self, msg)
 		
@@ -518,7 +513,7 @@ class GatorWindow(BWindow):
 		
 class App(BApplication):
     def __init__(self):
-        BApplication.__init__(self, "application/x-python")
+        BApplication.__init__(self, "application/x-python-BGator2")
     def ReadyToRun(self):
         self.window = GatorWindow()
         self.window.Show()
