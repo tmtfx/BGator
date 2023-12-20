@@ -95,6 +95,7 @@ class NewsItem(BListItem):
 			ep=BPoint(self.Width()-3,((frame.bottom-frame.top)/2))
 			owner.StrokeLine(sp,ep)
 		owner.SetLowColor(255,255,255,255)
+
 		
 
 from Be.Font import font_height
@@ -462,8 +463,8 @@ class GatorWindow(BWindow):
 			if self.Paperlist.lv.CurrentSelection()>-1:
 				self.gjornaaltolet()
 		elif msg.what == self.NewsList.NewsSelection:
-			if self.NewsList.lv.CurrentSelection()>-1:
-				curit = self.NewsList.lv.CurrentSelection()
+			curit = self.NewsList.lv.CurrentSelection()
+			if curit>-1:
 				Nitm = self.NewsList.lv.ItemAt(curit)
 				if Nitm.unread:
 					Nitm.unread=False
@@ -472,6 +473,7 @@ class GatorWindow(BWindow):
 					Nitm.entry.GetPath(pth)
 					msg.AddString("path",pth.Path())
 					msg.AddBool("unreadValue",False)
+					msg.AddInt32("selected",curit)
 					#self.Looper().PostMessage(msg)
 					#print("Tot. Handlers:",)
 					#self.loop.PostMessage(msg)
@@ -496,10 +498,47 @@ class GatorWindow(BWindow):
 				#self.NewsPreView.Delete()#SetText("",None)
 				self.NewsPreView.SelectAll()
 				self.NewsPreView.Clear()
-		elif msg.what == 83:
+		elif msg.what == 9:
+			curit = self.NewsList.lv.CurrentSelection()
+			if curit>-1:
+				Nitm = self.NewsList.lv.ItemAt(curit)
+				if not Nitm.unread:
+					Nitm.unread = True
+					msg=BMessage(83)
+					pth=BPath()
+					Nitm.entry.GetPath(pth)
+					msg.AddString("path",pth.Path())
+					msg.AddBool("unreadValue",True)
+					msg.AddInt32("selected",curit)
+					be_app.WindowAt(0).PostMessage(msg)
+		elif msg.what == 83: # Mark Read/unread
 			e = msg.FindString("path")
 			unrVal = msg.FindBool("unreadValue")
-			print(e,"set to",unrVal)
+			nd=BNode(e)
+			#while 1:
+			#	an = nd.GetNextAttrName()
+			#	if not an[1]:
+			#		a = an[0]
+			#	else:
+			#		a = None
+			#	if a is None:
+			#		nd.RewindAttrs()
+			#		break
+			#	else:
+			ninfo,ret=nd.GetAttrInfo("Unread")
+			if not ret:
+				if unrVal:
+					givevalue=bytearray(b'\x01')
+				else:
+					givevalue=bytearray(b'\x00')
+				#print(type(givevalue))
+				#print(givevalue)
+				nd.WriteAttr("Unread",ninfo.type,0,givevalue)
+				itto=self.NewsList.lv.ItemAt(msg.FindInt32("selected"))
+				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),False)
+			#####
+			#update Paperlist
+			#update NewsList
 			
 		BWindow.MessageReceived(self, msg)
 		
