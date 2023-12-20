@@ -1,6 +1,6 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
-from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler
+from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants
 from Be.GraphicsDefs import *
 from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
@@ -51,7 +51,7 @@ def attr(node):
 		else:
 			pnfo = node.GetAttrInfo(a)
 			if not pnfo[1]:
-				nfo = node.GetAttrInfo(a)[0]	
+				nfo = node.GetAttrInfo(a)[0]
 			type_string = get_type_string(nfo.type)
 			#print("Attr_name:",a,"Type:",type_string,"Size:", nfo.size,"Value:",node.ReadAttr(a, nfo.type, 0, None,nfo.size))
 			al.append((a,("Type:",type_string,"Size:",nfo.size),node.ReadAttr(a, nfo.type, 0, None,nfo.size)))
@@ -180,7 +180,7 @@ class PaperItem(BListItem):
 		#	self.font = be_plain_font
 		#	owner.SetFont(self.font)
 		#frame.PrintToStream()
-		owner.MovePenTo(5,frame.Height()-5)#2
+		owner.MovePenTo(5,frame.bottom-5)#2
 		if self.newnews:
 			owner.SetFont(be_bold_font)
 			owner.DrawString(self.name,None)#"▶ "+
@@ -222,19 +222,50 @@ class PapersScrollView:
 		
 class AddFeedWindow(BWindow):
 	def __init__(self):
-		BWindow.__init__(self, BRect(150,150,500,350), "BGator is back", window_type.B_FLOATING_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_BORDERED_WINDOW B_FLOATING_WINDOW
+		BWindow.__init__(self, BRect(150,150,500,300), "BGator is back", window_type.B_FLOATING_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_BORDERED_WINDOW B_FLOATING_WINDOW
 		self.bckgnd = BView(self.Bounds(), "background_View", 8, 20000000)
 		bckgnd_bounds=self.bckgnd.Bounds()
 		self.AddChild(self.bckgnd,None)
 		self.box = BBox(bckgnd_bounds,"Underbox",0x0202|0x0404,border_style.B_FANCY_BORDER)
 		self.bckgnd.AddChild(self.box,None)
+		a=BFont()
+		wid=a.StringWidth("Feed address:")
+		self.feedaddress = BTextControl(BRect(10,30,bckgnd_bounds.Width()-10,60),'TxTCtrl', "Feed address:",None,BMessage(1),0x0202|0x0404)
+		self.feedaddress.SetDivider(wid+5)
+		self.box.AddChild(self.feedaddress,None)
+		self.cancelBtn = BButton(BRect(10,80,bckgnd_bounds.Width()/2-5,110),'GetNewsButton','Cancel',BMessage(6))
+		self.addfeedBtn = BButton(BRect(bckgnd_bounds.Width()/2+5,80,bckgnd_bounds.Width()-10,110),'GetNewsButton','Add Feed',BMessage(7))
+		self.box.AddChild(self.cancelBtn,None)
+		self.box.AddChild(self.addfeedBtn,None)
+
+	def MessageReceived(self, msg):
+		if msg.what == 6:
+			self.Hide()
+		elif msg.what == 7:
+			msg=BMessage(245)
+			msg.AddString("feed",self.feedaddress.Text())
+			#d=feedparser.parse(self.feedaddress.Text())
+			#if d.feed.has_key('title'):
+			#	titul=d.feed.title
+			be_app.WindowAt(0).PostMessage(msg)
+				#manda messaggio alla finestra 0 per far fare questo:
+				#controlla se il feed ha un titolo, se ce l'ha procedi
+				#controlla se esiste cartella chiamata titul&
+				#se non esiste creala e configurala con i suoi attributi
+				#se esiste e ha tutti gli attributi uguali non fare niente
+				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
+				#se esiste ma non ha tutti gli attributi scrivili
+			self.Hide()
+		
+		BWindow.MessageReceived(self, msg)
+
 	def FrameResized(self,x,y):
-		self.ResizeTo(350,200)
+		self.ResizeTo(350,150)
 	def QuitRequested(self):
 		self.Hide()
 		#self.Quit()
 		#return BWindow.QuitRequested(self)
-		
+
 class GatorWindow(BWindow):
 	global tmpNitm,tmpPitm
 	tmpPitm=[]
@@ -381,7 +412,7 @@ class GatorWindow(BWindow):
 
 	def UpdatePapers(self):
 		self.ClearPaperlist()
-
+		
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 		perc.Path()
@@ -579,6 +610,35 @@ class GatorWindow(BWindow):
 		elif msg.what == 1:
 			self.addfeedWindow = AddFeedWindow()
 			self.addfeedWindow.Show()
+		elif msg.what == 245:
+			feedaddr=msg.FindString("feed")
+			d=feedparser.parse(feedaddr)
+			if d.feed.has_key('title'):
+				dirname=d.feed.title
+				perc=BPath()
+				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+				perc.Path()
+				datapath=BDirectory(perc.Path()+"/BGator2/Papers/"+dirname)
+				entr=BEntry(perc.Path()+"/BGator2/Papers/"+dirname)
+				if entr.Exists():
+					print("la cartella esiste")
+				else:
+					datapath.CreateDirectory(perc.Path()+"/BGator2/Papers/"+dirname,datapath)
+					nd=BNode(entr)
+					print("risultato di lock",nd.Lock())
+					givevalue=bytes(feedaddr,'utf-8')
+					nd.WriteAttr("address",TypeConstants.B_STRING_TYPE,0,givevalue)
+					nd.Unlock()
+				#controlla se il feed ha un titolo, se ce l'ha procedi
+				#controlla se esiste cartella chiamata titul&
+				#se non esiste creala e configurala con i suoi attributi
+				#se esiste e ha tutti gli attributi uguali non fare niente
+				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
+				#se esiste ma non ha tutti gli attributi scrivili
+			mupd=BMessage(542)
+			be_app.WindowAt(0).PostMessage(mupd)
+		elif msg.what == 542:
+			self.UpdatePapers()
 
 		BWindow.MessageReceived(self, msg)
 		
