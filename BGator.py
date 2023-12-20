@@ -222,7 +222,7 @@ class PapersScrollView:
 		
 class AddFeedWindow(BWindow):
 	def __init__(self):
-		BWindow.__init__(self, BRect(150,150,500,300), "BGator is back", window_type.B_FLOATING_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_BORDERED_WINDOW B_FLOATING_WINDOW
+		BWindow.__init__(self, BRect(150,150,500,300), "Add Feed Address", window_type.B_FLOATING_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_BORDERED_WINDOW B_FLOATING_WINDOW
 		self.bckgnd = BView(self.Bounds(), "background_View", 8, 20000000)
 		bckgnd_bounds=self.bckgnd.Bounds()
 		self.AddChild(self.bckgnd,None)
@@ -270,6 +270,7 @@ class GatorWindow(BWindow):
 	global tmpNitm,tmpPitm
 	tmpPitm=[]
 	tmpNitm=[]
+	tmpWind=[]
 	Menus = (
 		('File', ((1, 'Add Paper'),(2, 'Remove Paper'),(None, None),(int(AppDefs.B_QUIT_REQUESTED), 'Quit'))),('News', ((6, 'Get News'),(4, 'Mark all read'),(5, 'Clear news'))),
 		('Help', ((8, 'Help'),(3, 'About')))
@@ -608,8 +609,10 @@ class GatorWindow(BWindow):
 			print("window with details and eventually per paper settings or open tracker at its path") #like pulse specified update 
 		
 		elif msg.what == 1:
-			self.addfeedWindow = AddFeedWindow()
-			self.addfeedWindow.Show()
+			self.tmpWind.append(AddFeedWindow())
+			self.tmpWind[-1].Show()
+			#self.addfeedWindow = AddFeedWindow()
+			#self.addfeedWindow.Show()
 		elif msg.what == 245:
 			feedaddr=msg.FindString("feed")
 			d=feedparser.parse(feedaddr)
@@ -617,13 +620,14 @@ class GatorWindow(BWindow):
 				dirname=d.feed.title
 				perc=BPath()
 				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
-				perc.Path()
+				#perc.Path()
 				datapath=BDirectory(perc.Path()+"/BGator2/Papers/"+dirname)
 				entr=BEntry(perc.Path()+"/BGator2/Papers/"+dirname)
 				if entr.Exists():
 					print("la cartella esiste")
 				else:
 					datapath.CreateDirectory(perc.Path()+"/BGator2/Papers/"+dirname,datapath)
+					del perc
 					nd=BNode(entr)
 					givevalue=bytes(feedaddr,'utf-8')
 					nd.WriteAttr("address",TypeConstants.B_STRING_TYPE,0,givevalue)
@@ -639,7 +643,9 @@ class GatorWindow(BWindow):
 				#se esiste ma non ha tutti gli attributi scrivili
 			#mupd=BMessage(542)
 			#be_app.WindowAt(0).PostMessage(mupd)
-
+		elif msg.what == 6:
+			#Download Papers News, and eventually update NewsList.lv
+			pass
 		elif msg.what == 542:
 			self.UpdatePapers()
 
@@ -653,10 +659,9 @@ class GatorWindow(BWindow):
 	def QuitRequested(self):
 		wnum = be_app.CountWindows()
 		if wnum>1:
-			i=wnum
-			while i>0:
-				be_app.WindowAt(i-1).Quit()
-				i-=1
+			for wind in self.tmpWind:
+				wind.Lock()
+				wind.Quit()
 		return BWindow.QuitRequested(self)
 		
 class App(BApplication):
