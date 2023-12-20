@@ -605,7 +605,7 @@ class GatorWindow(BWindow):
 					t.run()
 			
 		elif msg.what == self.Paperlist.HiWhat:
-			print("window with details and eventually per paper settings") #like pulse specified update
+			print("window with details and eventually per paper settings or open tracker at its path") #like pulse specified update 
 		
 		elif msg.what == 1:
 			self.addfeedWindow = AddFeedWindow()
@@ -634,10 +634,7 @@ class GatorWindow(BWindow):
 						if element[0] == "address":
 							tmpPitm.append(PaperItem(pirc,element[2][0]))
 							self.Paperlist.lv.AddItem(tmpPitm[-1])
-				#controlla se il feed ha un titolo, se ce l'ha procedi
 				#controlla se esiste cartella chiamata titul&
-				#se non esiste creala e configurala con i suoi attributi
-				#se esiste e ha tutti gli attributi uguali non fare niente
 				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
 				#se esiste ma non ha tutti gli attributi scrivili
 			#mupd=BMessage(542)
