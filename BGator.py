@@ -194,6 +194,7 @@ class NewsScrollView:
 	def __init__(self, rect, name):
 		self.lv = BListView(rect, name, list_view_type.B_SINGLE_SELECTION_LIST)
 		self.lv.SetSelectionMessage(BMessage(self.NewsSelection))
+		self.lv.SetInvocationMessage(BMessage(self.HiWhat))
 		self.sv = BScrollView(name, self.lv)#, 0x0202,0,False,False, border_style.B_FANCY_BORDER)#|0x1030
 		#'NewsScrollView'
 	def topview(self):
@@ -209,6 +210,7 @@ class PapersScrollView:
 	def __init__(self, rect, name):
 		self.lv = BListView(rect, name, list_view_type.B_SINGLE_SELECTION_LIST)
 		self.lv.SetSelectionMessage(BMessage(self.PaperSelection))
+		self.lv.SetInvocationMessage(BMessage(self.HiWhat))
 		self.sv = BScrollView(name, self.lv)#, 0x0202,0,False,False, border_style.B_FANCY_BORDER)#|0x1030
 		#'PapersScrollView'
 	def topview(self):
@@ -331,7 +333,7 @@ class GatorWindow(BWindow):
 		btnswidth=round((boxboundsw - 8 - (8 + boxboundsw / 3) -8 - 8)/3,2)
 		self.markUnreadBtn = BButton(BRect(round(8 + boxboundsw / 3, 2),round(boxboundsh - 36, 2),round(8 + boxboundsw / 3 + btnswidth, 2) ,round(boxboundsh - 8,2)),'markUnreadButton','Mark as Unread',BMessage(9))
 		self.openBtn = BButton(BRect(round(boxboundsw-8-btnswidth, 2),round( boxboundsh - 36, 2),round(boxboundsw-8, 2),round(boxboundsh-8, 2)),'openButton','Open with browser',BMessage(1))
-		self.markReadBtn = BButton(BRect(round(8 + boxboundsw / 3 + btnswidth + 8, 2),round( boxboundsh - 36, 2),round(boxboundsw-16-btnswidth, 2),round(boxboundsh-8, 2)),'markReadButton','Mark as Read',BMessage(1))
+		self.markReadBtn = BButton(BRect(round(8 + boxboundsw / 3 + btnswidth + 8, 2),round( boxboundsh - 36, 2),round(boxboundsw-16-btnswidth, 2),round(boxboundsh-8, 2)),'markReadButton','Mark as Read',BMessage(10))
 		self.outbox_preview.AddChild(self.NewsPreView,None)
 		self.box.AddChild(self.markUnreadBtn,None)
 		self.box.AddChild(self.openBtn,None)
@@ -349,6 +351,7 @@ class GatorWindow(BWindow):
 				for item in tmpNitm:
 					del item
 				tmpNitm.clear()
+
 	def ClearPaperlist(self):
 		if self.Paperlist.lv.CountItems()>0:
 			self.Paperlist.lv.DeselectAll()
@@ -360,10 +363,10 @@ class GatorWindow(BWindow):
 				for item in tmpPitm:
 					del item
 				tmpPitm.clear()
-		
+
 	def UpdatePapers(self):
 		self.ClearPaperlist()
-		
+
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 		perc.Path()
@@ -372,10 +375,7 @@ class GatorWindow(BWindow):
 		if not ent.Exists():
 			datapath.CreateDirectory(perc.Path()+"/BGator2/Papers", datapath)
 		ent.GetPath(perc)
-#		#print(perc.Path())
-#		#datapath=BDirectory(perc.Path()+"/")
 		if datapath.CountEntries() > 0:
-#			print("num entries:",datapath.CountEntries())
 			datapath.Rewind()
 			ret=False
 			while not ret:
@@ -391,8 +391,6 @@ class GatorWindow(BWindow):
 		attributes=attr(nf)
 		for element in attributes:
 			if element[0] == "address":
-				#global itm
-				#itm = PaperItem(perc,element[2][0])
 				tmpPitm.append(PaperItem(perc,element[2][0]))
 				self.Paperlist.lv.AddItem(tmpPitm[-1])
 
@@ -531,6 +529,20 @@ class GatorWindow(BWindow):
 					msg.AddInt32("selected",curit)
 					msg.AddInt32("selectedP",self.Paperlist.lv.CurrentSelection())
 					be_app.WindowAt(0).PostMessage(msg)
+		elif msg.what == 10:
+			curit = self.NewsList.lv.CurrentSelection()
+			if curit>-1:
+				Nitm = self.NewsList.lv.ItemAt(curit)
+				if Nitm.unread:
+					Nitm.unread = True
+					msg=BMessage(83)
+					pth=BPath()
+					Nitm.entry.GetPath(pth)
+					msg.AddString("path",pth.Path())
+					msg.AddBool("unreadValue",False)
+					msg.AddInt32("selected",curit)
+					msg.AddInt32("selectedP",self.Paperlist.lv.CurrentSelection())
+					be_app.WindowAt(0).PostMessage(msg)
 		elif msg.what == 83: # Mark Read/unread
 			e = msg.FindString("path")
 			unrVal = msg.FindBool("unreadValue")
@@ -562,7 +574,15 @@ class GatorWindow(BWindow):
 			#####
 			#update Paperlist
 			#update NewsList
+		elif msg.what == self.NewsList.HiWhat:
+			curit=self.NewsList.lv.CurrentSelection()
+			if curit>-1:
+				itto=self.NewsList.lv.ItemAt(curit)
+				if itto.link != "":
+					print("open the link")
 			
+		elif msg.what == self.Paperlist.HiWhat:
+			print("window with details and eventually per paper settings") #like pulse specified update
 		BWindow.MessageReceived(self, msg)
 		
 	def FrameResized(self,x,y):
