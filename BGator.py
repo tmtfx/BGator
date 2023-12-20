@@ -16,6 +16,7 @@ from Be import Entry
 from Be.Entry import entry_ref, get_ref_for_path
 
 import configparser,webbrowser, feedparser, struct
+from threading import Thread
 
 Config=configparser.ConfigParser()
 def ConfigSectionMap(section):
@@ -332,7 +333,7 @@ class GatorWindow(BWindow):
 		
 		btnswidth=round((boxboundsw - 8 - (8 + boxboundsw / 3) -8 - 8)/3,2)
 		self.markUnreadBtn = BButton(BRect(round(8 + boxboundsw / 3, 2),round(boxboundsh - 36, 2),round(8 + boxboundsw / 3 + btnswidth, 2) ,round(boxboundsh - 8,2)),'markUnreadButton','Mark as Unread',BMessage(9))
-		self.openBtn = BButton(BRect(round(boxboundsw-8-btnswidth, 2),round( boxboundsh - 36, 2),round(boxboundsw-8, 2),round(boxboundsh-8, 2)),'openButton','Open with browser',BMessage(1))
+		self.openBtn = BButton(BRect(round(boxboundsw-8-btnswidth, 2),round( boxboundsh - 36, 2),round(boxboundsw-8, 2),round(boxboundsh-8, 2)),'openButton','Open with browser',BMessage(self.NewsList.HiWhat))
 		self.markReadBtn = BButton(BRect(round(8 + boxboundsw / 3 + btnswidth + 8, 2),round( boxboundsh - 36, 2),round(boxboundsw-16-btnswidth, 2),round(boxboundsh-8, 2)),'markReadButton','Mark as Read',BMessage(10))
 		self.outbox_preview.AddChild(self.NewsPreView,None)
 		self.box.AddChild(self.markUnreadBtn,None)
@@ -473,6 +474,8 @@ class GatorWindow(BWindow):
 				risp.Go()
 		elif msg.what == self.Paperlist.PaperSelection:
 			self.NewsList.lv.MakeEmpty()
+			self.NewsPreView.SelectAll()
+			self.NewsPreView.Clear()
 			if len(tmpNitm)>0:
 				for item in tmpNitm:
 					del item
@@ -579,7 +582,9 @@ class GatorWindow(BWindow):
 			if curit>-1:
 				itto=self.NewsList.lv.ItemAt(curit)
 				if itto.link != "":
-					print("open the link")
+					t = Thread(target=openlink,args=(itto.link,))
+					t.run()
+#					print("open the link")
 			
 		elif msg.what == self.Paperlist.HiWhat:
 			print("window with details and eventually per paper settings") #like pulse specified update
