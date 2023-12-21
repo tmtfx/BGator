@@ -201,7 +201,7 @@ class NewsScrollView:
 		self.lv = BListView(rect, name, list_view_type.B_SINGLE_SELECTION_LIST)
 		self.lv.SetSelectionMessage(BMessage(self.NewsSelection))
 		self.lv.SetInvocationMessage(BMessage(self.HiWhat))
-		self.sv = BScrollView(name, self.lv,B_FOLLOW_NONE,0,True,True,border_style.B_FANCY_BORDER)
+		self.sv = BScrollView(name, self.lv,B_FOLLOW_NONE,0,False,True,border_style.B_FANCY_BORDER)
 		#'NewsScrollView'
 	def topview(self):
 		return self.sv
@@ -282,7 +282,7 @@ class GatorWindow(BWindow):
 		)
 	def __init__(self):
 		global tab,name
-		BWindow.__init__(self, BRect(100,100,900,750), "BGator is back", window_type.B_TITLED_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_MODAL_WINDOW
+		BWindow.__init__(self, BRect(100,100,1000,750), "BGator is back", window_type.B_TITLED_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_MODAL_WINDOW
 		bounds=self.Bounds()
 		self.bckgnd = BView(self.Bounds(), "background_View", 8, 20000000)
 		bckgnd_bounds=self.bckgnd.Bounds()
@@ -318,7 +318,7 @@ class GatorWindow(BWindow):
 		self.box.SetFont(bf)
 		self.Paperlist = PapersScrollView(BRect(8 , 56, boxboundsw / 3 -20, boxboundsh - 28 ), 'NewsPapersScrollView')
 		self.box.AddChild(self.Paperlist.topview(), None)
-		self.NewsList = NewsScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -28 , boxboundsh / 1.8 -20), 'NewsListScrollView')
+		self.NewsList = NewsScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -28 , boxboundsh / 1.8 ), 'NewsListScrollView')
 		self.box.AddChild(self.NewsList.sv,None)
 		PSframe=self.Paperlist.sv.Frame()
 		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 38)
