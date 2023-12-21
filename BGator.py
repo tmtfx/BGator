@@ -1,11 +1,11 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
-from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants, BSlider
+from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants, BScrollBar
 from Be.GraphicsDefs import *
 from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
 from Be.Alert import alert_type
-from Be.InterfaceDefs import border_style
+from Be.InterfaceDefs import border_style,orientation
 from Be.ListView import list_view_type
 from Be.AppDefs import *
 from Be.Font import be_plain_font, be_bold_font
@@ -282,7 +282,7 @@ class GatorWindow(BWindow):
 		)
 	def __init__(self):
 		global tab,name
-		BWindow.__init__(self, BRect(100,100,1000,750), "BGator is back", window_type.B_TITLED_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_MODAL_WINDOW
+		BWindow.__init__(self, BRect(50,100,1024,750), "BGator is back", window_type.B_TITLED_WINDOW,  B_NOT_RESIZABLE | B_QUIT_ON_WINDOW_CLOSE)#B_MODAL_WINDOW
 		bounds=self.Bounds()
 		self.bckgnd = BView(self.Bounds(), "background_View", 8, 20000000)
 		bckgnd_bounds=self.bckgnd.Bounds()
@@ -327,6 +327,9 @@ class GatorWindow(BWindow):
 		innerRect= BRect(8,8,txtRect.Width()-8,txtRect.Height())
 		self.NewsPreView = BTextView(BRect(2,2, self.outbox_preview.Bounds().Width()-2,self.outbox_preview.Bounds().Height()-2), 'NewsTxTView', innerRect , B_FOLLOW_NONE,2000000)
 		self.NewsPreView.MakeEditable(False)
+		NewsPreView_bounds=self.NewsPreView.Bounds()
+		self.scroller=BScrollBar(BRect(NewsPreView_bounds.right-20,NewsPreView_bounds.top,NewsPreView_bounds.right,NewsPreView_bounds.bottom),'NewsPreView_ScrollBar',self.NewsPreView,0.0,0.0,orientation.B_VERTICAL)
+		self.NewsPreView.AddChild(self.scroller,None)
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 		perc.Path()
