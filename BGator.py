@@ -620,6 +620,7 @@ class GatorWindow(BWindow):
 					del tmpPitm[i]
 		
 		elif msg.what == 40:
+			#TODO snellire Sort By Name
 			perc=BPath()
 			find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 			datapath=BDirectory(perc.Path()+"/BGator2")
@@ -631,9 +632,7 @@ class GatorWindow(BWindow):
 			print(confile.Path())
 			ent=BEntry(confile.Path())
 			if ent.Exists():
-				#print(confile.Path())
 				cfgfile = open(confile.Path(),'w')
-				#Config.add_section('General')
 				Config.set('General','sort', "1")
 				Config.write(cfgfile)
 				cfgfile.close()
@@ -645,6 +644,7 @@ class GatorWindow(BWindow):
 			menuitm=self.savemenu.FindItem(42)
 			menuitm.SetMarked(0)
 		elif msg.what == 41:
+			#TODO snellire Sort By Unread
 			perc=BPath()
 			find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 			datapath=BDirectory(perc.Path()+"/BGator2")
@@ -657,9 +657,7 @@ class GatorWindow(BWindow):
 			print(confile.Path())
 			ent=BEntry(confile.Path())
 			if ent.Exists():
-				#print(confile.Path())
 				cfgfile = open(confile.Path(),'w')
-				#Config.add_section('General')
 				Config.set('General','sort', "2")
 				Config.write(cfgfile)
 				cfgfile.close()
@@ -671,6 +669,7 @@ class GatorWindow(BWindow):
 			menuitm=self.savemenu.FindItem(42)
 			menuitm.SetMarked(0)
 		elif msg.what == 42:
+			#TODO snellire Sort By Date
 			perc=BPath()
 			find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 			datapath=BDirectory(perc.Path()+"/BGator2")
@@ -679,13 +678,9 @@ class GatorWindow(BWindow):
 				datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
 			ent.GetPath(perc)
 			confile=BPath(perc.Path()+'/config.ini',None,False)
-			print(confile.Path())
-			#print(confile.Path())
 			ent=BEntry(confile.Path())
 			if ent.Exists():
-				#print(confile.Path())
 				cfgfile = open(confile.Path(),'w')
-				#Config.add_section('General')
 				Config.set('General','sort', "3")
 				Config.write(cfgfile)
 				cfgfile.close()
