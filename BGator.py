@@ -388,7 +388,6 @@ class GatorWindow(BWindow):
 		
 		btnswidth=round((boxboundsw - 8 - (8 + boxboundsw / 3) -8 - 8)/3,2)
 		markBounds=BRect(round(8 + boxboundsw / 3, 2),round(boxboundsh - 36, 2),round(8 + boxboundsw / 3 + btnswidth, 2) ,round(boxboundsh - 8,2))
-		#print(markBounds.Height())
 		self.markUnreadBtn = BButton(markBounds,'markUnreadButton','Mark as Unread',BMessage(9))
 		self.openBtn = BButton(BRect(round(boxboundsw-8-btnswidth, 2),round( boxboundsh - 36, 2),round(boxboundsw-8, 2),round(boxboundsh-8, 2)),'openButton','Open with browser',BMessage(self.NewsList.HiWhat))
 		self.markReadBtn = BButton(BRect(round(8 + boxboundsw / 3 + btnswidth + 8, 2),round( boxboundsh - 36, 2),round(boxboundsw-16-btnswidth, 2),round(boxboundsh-8, 2)),'markReadButton','Mark as Read',BMessage(10))
@@ -665,9 +664,50 @@ class GatorWindow(BWindow):
 				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
 				#se esiste ma non ha tutti gli attributi scrivili
 		elif msg.what == 6:
+			#parallel=[]
 			#Download Papers News, and eventually update NewsList.lv
 			for item in self.Paperlist.lv.Items():
-				#Threadize this
+			#(target=openlink,args=(itto.link,))
+				Thread(target=self.DownloadNews,args=(item,)).start()
+				#parallel.append(Thread(target=self.DownloadNews,args=(item,)))
+				#parallel[-1].setDaemon(True)
+				#parallel[-1].run()#this not exits until finished
+				#parallel[-1].start()
+#				perc=BPath()
+#				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+#				dirpath=BPath(perc.Path()+"/BGator2/Papers/"+item.name,None,False)
+#				datapath=BDirectory(dirpath.Path())
+#				stringa=item.address.encode('utf-8')
+#				rss = feedparser.parse(stringa.decode('utf-8'))
+#				del stringa
+#				y=len(rss['entries'])
+#				for x in range (y):
+#					filename=rss.entries[x].title
+#					newfile=BFile()
+#					if datapath.CreateFile(dirpath.Path()+"/"+filename,newfile,True):
+#						pass
+#					else:
+#						nd=BNode(dirpath.Path()+"/"+filename)
+#						givevalue=bytes(rss.entries[x].title,'utf-8')
+#						nd.WriteAttr("title",TypeConstants.B_STRING_TYPE,0,givevalue)
+#						givevalue=bytes(rss.entries[x].link,'utf-8')
+#						nd.WriteAttr("link",TypeConstants.B_STRING_TYPE,0,givevalue)
+#						givevalue=bytearray(b'\x01')
+#						nd.WriteAttr("Unread",TypeConstants.B_BOOL_TYPE,0,givevalue)
+						#il file è stato creato ora lo riempio
+				#item.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(self.Paperlist.lv.IndexOf(item)),False)
+			self.Paperlist.lv.Hide()
+			self.Paperlist.lv.Show()
+
+		elif msg.what == 542:
+			# eventually remove this
+			#self.UpdatePapers()
+			self.Paperlist.lv.Hide()
+			self.Paperlist.lv.Show()
+
+		BWindow.MessageReceived(self, msg)
+		
+	def DownloadNews(self,item):
 				perc=BPath()
 				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 				dirpath=BPath(perc.Path()+"/BGator2/Papers/"+item.name,None,False)
@@ -689,17 +729,8 @@ class GatorWindow(BWindow):
 						nd.WriteAttr("link",TypeConstants.B_STRING_TYPE,0,givevalue)
 						givevalue=bytearray(b'\x01')
 						nd.WriteAttr("Unread",TypeConstants.B_BOOL_TYPE,0,givevalue)
-						#il file è stato creato ora lo riempio
-				#item.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(self.Paperlist.lv.IndexOf(item)),False)
-			self.Paperlist.lv.Hide()
-			self.Paperlist.lv.Show()
-
-		elif msg.what == 542:
-			# eventually remove this
-			self.UpdatePapers()
-
-		BWindow.MessageReceived(self, msg)
-		
+				be_app.WindowAt(0).PostMessage(542)
+	
 	def FrameResized(self,x,y):
 		#self.ResizeToPreferred()
 		self.ResizeTo(800,650)
