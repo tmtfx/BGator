@@ -249,17 +249,7 @@ class AddFeedWindow(BWindow):
 		elif msg.what == 7:
 			msg=BMessage(245)
 			msg.AddString("feed",self.feedaddress.Text())
-			#d=feedparser.parse(self.feedaddress.Text())
-			#if d.feed.has_key('title'):
-			#	titul=d.feed.title
 			be_app.WindowAt(0).PostMessage(msg)
-				#manda messaggio alla finestra 0 per far fare questo:
-				#controlla se il feed ha un titolo, se ce l'ha procedi
-				#controlla se esiste cartella chiamata titul&
-				#se non esiste creala e configurala con i suoi attributi
-				#se esiste e ha tutti gli attributi uguali non fare niente
-				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
-				#se esiste ma non ha tutti gli attributi scrivili
 			self.Hide()
 		
 		BWindow.MessageReceived(self, msg)
@@ -277,7 +267,7 @@ class GatorWindow(BWindow):
 	tmpNitm=[]
 	tmpWind=[]
 	Menus = (
-		('File', ((1, 'Add Paper'),(2, 'Remove Paper'),(None, None),(int(AppDefs.B_QUIT_REQUESTED), 'Quit'))),('News', ((6, 'Get News'),(4, 'Mark all read'),(5, 'Clear news'))),
+		('File', ((1, 'Add Paper'),(2, 'Remove Paper'),(None, None),(int(AppDefs.B_QUIT_REQUESTED), 'Quit'))),('News', ((6, 'Get News'),(4, 'Mark all as read'),(5, 'Clear news'))),('Sort', ((40, 'By Name'),(41, 'By Unread'),(42, 'By Date'))),
 		('Help', ((8, 'Help'),(3, 'About')))
 		)
 	def __init__(self):
@@ -290,14 +280,60 @@ class GatorWindow(BWindow):
 		self.bar = BMenuBar(bckgnd_bounds, 'Bar')
 		x, barheight = self.bar.GetPreferredSize()
 		self.box = BBox(BRect(0,barheight,bckgnd_bounds.Width(),bckgnd_bounds.Height()),"Underbox",0x0202|0x0404,border_style.B_FANCY_BORDER)
+		
+		perc=BPath()
+		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+		perc.Path()
+		datapath=BDirectory(perc.Path()+"/BGator2")
+		ent=BEntry(datapath,perc.Path()+"/BGator2")
+		if not ent.Exists():
+			datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
+		ent.GetPath(perc)
+		confile=BPath(perc.Path()+'/config.ini',None,False)
+		ent=BEntry(confile.Path())
+		if ent.Exists():
+			Config.read(confile.Path())
+			try:
+				sort=ConfigSectionMap("General")['sort']
+			except:
+				cfgfile = open(confile.Path(),'w')
+				Config.add_section('General')
+				Config.set('General','sort', "1")
+				sort=1
+				Config.write(cfgfile)
+				cfgfile.close()
+				Config.read(confile.Path())
+		else:
+			cfgfile = open(confile.Path(),'w')
+			Config.add_section('General')
+			Config.set('General','sort', "1")
+			sort=1
+			Config.write(cfgfile)
+			cfgfile.close()
+			Config.read(confile.Path())
 		for menu, items in self.Menus:
+			if menu == "Sort":
+				savemenu = True
+			else:
+				savemenu = False
 			menu = BMenu(menu)
 			for k, name in items:
 				if k is None:
 						menu.AddItem(BSeparatorItem())
 				else:
-						menu.AddItem(BMenuItem(name, BMessage(k),name[1],0))
-			self.bar.AddItem(menu)
+						mitm=BMenuItem(name, BMessage(k),name[1],0)
+						if name == "By Name" and sort == "1":
+							mitm.SetMarked(True)
+						elif name == "By Unread" and sort == "2":
+							mitm.SetMarked(True)
+						elif name == "By Date" and sort == "3":
+							mitm.SetMarked(True)
+						menu.AddItem(mitm)
+			if savemenu:
+				self.savemenu = menu
+				self.bar.AddItem(menu)
+			else:	
+				self.bar.AddItem(menu)
 		bf=BFont()
 		bf.PrintToStream()
 		oldSize=bf.Size()
@@ -335,31 +371,48 @@ class GatorWindow(BWindow):
 		perc.Path()
 		datapath=BDirectory(perc.Path()+"/BGator2")
 		ent=BEntry(datapath,perc.Path()+"/BGator2")
-		if not ent.Exists():
-			datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
+		#if not ent.Exists():
+		#	datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
 		ent.GetPath(perc)
-		confile=BPath(perc.Path()+'/config.ini','',False)
+		confile=BPath(perc.Path()+'/config.ini',None,False)
 		ent=BEntry(confile.Path())
 		if ent.Exists():
 			Config.read(confile.Path())
-			path=ConfigSectionMap("Browser")['path']
-			name=ConfigSectionMap("Browser")['name']
-			type=ConfigSectionMap("Browser")['type']
-			buleano=ConfigSectionMap("Browser")['newtab']
-			if buleano:
-				tab=2
-			else:
-				tab=1
-			tmpent=BEntry(path,False)
-			if tmpent.Exists():
-				if type=='Generic':
-					webbrowser.register(name,None,webbrowser.GenericBrowser(path))
-				elif type=='Mozilla':
-					webbrowser.register(name,None,webbrowser.Mozilla(path))
-				elif type=='Konqueror':
-					webbrowser.register(name,None,webbrowser.Konqueror(path)) # no pass path
-				elif type=='Opera':
-					webbrowser.register(name,None,webbrowser.Opera(path)) # no pass path
+			try:
+				path=ConfigSectionMap("Browser")['path']
+				name=ConfigSectionMap("Browser")['name']
+				type=ConfigSectionMap("Browser")['type']
+				buleano=ConfigSectionMap("Browser")['newtab']
+				if buleano:
+					tab=2
+				else:
+					tab=1
+				tmpent=BEntry(path,False)
+				if tmpent.Exists():
+					if type=='Generic':
+						webbrowser.register(name,None,webbrowser.GenericBrowser(path))
+					elif type=='Mozilla':
+						webbrowser.register(name,None,webbrowser.Mozilla(path))
+					elif type=='Konqueror':
+						webbrowser.register(name,None,webbrowser.Konqueror(path)) # no pass path
+					elif type=='Opera':
+						webbrowser.register(name,None,webbrowser.Opera(path)) # no pass path
+			except:
+				find_directory(directory_which.B_SYSTEM_APPS_DIRECTORY,perc,False,None)
+				ent=BEntry(perc.Path()+"/WebPositive")
+				if ent.Exists():
+					cfgfile = open(confile.Path(),'w')
+					Config.add_section('Browser')
+					Config.set('Browser','path', perc.Path()+"/WebPositive")
+					Config.set('Browser','name', "WebPositive")
+					Config.set('Browser','type', "Generic")
+					Config.set('Browser','newtab', "True")
+					name="WebPositive"
+					tab=2
+					Config.write(cfgfile)
+					cfgfile.close()
+					Config.read(confile.Path())
+					webbrowser.register( "WebPositive",None,webbrowser.GenericBrowser(perc.Path()+"/WebPositive"))
 		else:
 			find_directory(directory_which.B_SYSTEM_APPS_DIRECTORY,perc,False,None)
 			ent=BEntry(perc.Path()+"/WebPositive")
@@ -538,7 +591,6 @@ class GatorWindow(BWindow):
 			#remove feed and relative files and dir
 			cursel=self.Paperlist.lv.CurrentSelection()
 			if cursel>-1:
-				#Deseleziono paperlist
 				self.Paperlist.lv.Select(-1)
 				dirname=self.Paperlist.lv.ItemAt(cursel).path.Path()
 				print("elimino files in",dirname)
@@ -565,8 +617,85 @@ class GatorWindow(BWindow):
 					i+=1
 				self.Paperlist.lv.RemoveItem(cursel)
 				if remarray:
-					del tmpPitm[i]# <----no di 0 ma del valore giusto!!!!!!
-
+					del tmpPitm[i]
+		
+		elif msg.what == 40:
+			perc=BPath()
+			find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+			datapath=BDirectory(perc.Path()+"/BGator2")
+			ent=BEntry(datapath,perc.Path()+"/BGator2")
+			if not ent.Exists():
+				datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
+			ent.GetPath(perc)
+			confile=BPath(perc.Path()+'/config.ini',None,False)
+			print(confile.Path())
+			ent=BEntry(confile.Path())
+			if ent.Exists():
+				#print(confile.Path())
+				cfgfile = open(confile.Path(),'w')
+				#Config.add_section('General')
+				Config.set('General','sort', "1")
+				Config.write(cfgfile)
+				cfgfile.close()
+				Config.read(confile.Path())
+			menuitm=self.savemenu.FindItem(40)
+			menuitm.SetMarked(1)
+			menuitm=self.savemenu.FindItem(41)
+			menuitm.SetMarked(0)
+			menuitm=self.savemenu.FindItem(42)
+			menuitm.SetMarked(0)
+		elif msg.what == 41:
+			perc=BPath()
+			find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+			datapath=BDirectory(perc.Path()+"/BGator2")
+			ent=BEntry(datapath,perc.Path()+"/BGator2")
+			if not ent.Exists():
+				datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
+			ent.GetPath(perc)
+			print(perc.Path())
+			confile=BPath(perc.Path()+'/config.ini',None,False)
+			print(confile.Path())
+			ent=BEntry(confile.Path())
+			if ent.Exists():
+				#print(confile.Path())
+				cfgfile = open(confile.Path(),'w')
+				#Config.add_section('General')
+				Config.set('General','sort', "2")
+				Config.write(cfgfile)
+				cfgfile.close()
+				Config.read(confile.Path())
+			menuitm=self.savemenu.FindItem(40)
+			menuitm.SetMarked(0)
+			menuitm=self.savemenu.FindItem(41)
+			menuitm.SetMarked(1)
+			menuitm=self.savemenu.FindItem(42)
+			menuitm.SetMarked(0)
+		elif msg.what == 42:
+			perc=BPath()
+			find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+			datapath=BDirectory(perc.Path()+"/BGator2")
+			ent=BEntry(datapath,perc.Path()+"/BGator2")
+			if not ent.Exists():
+				datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
+			ent.GetPath(perc)
+			confile=BPath(perc.Path()+'/config.ini',None,False)
+			print(confile.Path())
+			#print(confile.Path())
+			ent=BEntry(confile.Path())
+			if ent.Exists():
+				#print(confile.Path())
+				cfgfile = open(confile.Path(),'w')
+				#Config.add_section('General')
+				Config.set('General','sort', "3")
+				Config.write(cfgfile)
+				cfgfile.close()
+				Config.read(confile.Path())
+			menuitm=self.savemenu.FindItem(40)
+			menuitm.SetMarked(0)
+			menuitm=self.savemenu.FindItem(41)
+			menuitm.SetMarked(0)
+			menuitm=self.savemenu.FindItem(42)
+			menuitm.SetMarked(1)
 		elif msg.what == self.Paperlist.PaperSelection:
 			#Paper selection
 			self.NewsList.lv.MakeEmpty()
@@ -604,6 +733,20 @@ class GatorWindow(BWindow):
 				#self.NewsPreView.Delete()
 				self.NewsPreView.SelectAll()
 				self.NewsPreView.Clear()
+
+		elif msg.what == 4:
+			if self.NewsList.lv.CountItems()>0:
+				for item in self.NewsList.lv.Items():
+					item.unread = False
+					msg=BMessage(83)
+					pth=BPath()
+					item.entry.GetPath(pth)
+					msg.AddString("path",pth.Path())
+					msg.AddBool("unreadValue",False)
+					msg.AddInt32("selected",self.NewsList.lv.IndexOf(item))
+					msg.AddInt32("selectedP",self.Paperlist.lv.CurrentSelection())
+					be_app.WindowAt(0).PostMessage(msg)
+
 		elif msg.what == 9:
 			#mark unread btn
 			curit = self.NewsList.lv.CurrentSelection()
@@ -648,9 +791,12 @@ class GatorWindow(BWindow):
 					givevalue=bytearray(b'\x00')
 				nd.WriteAttr("Unread",ninfo.type,0,givevalue)
 				itto=self.NewsList.lv.ItemAt(msg.FindInt32("selected"))
-				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),False)
+				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),True)
+				
 				itto=self.Paperlist.lv.ItemAt(msg.FindInt32("selectedP"))
 				itto.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(msg.FindInt32("selectedP")),False)
+			self.NewsList.lv.Hide()
+			self.NewsList.lv.Show()
 
 		elif msg.what == self.NewsList.HiWhat:
 			#open link
