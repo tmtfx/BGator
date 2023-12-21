@@ -1,6 +1,6 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
-from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants
+from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants, BSlider
 from Be.GraphicsDefs import *
 from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
@@ -41,6 +41,7 @@ def attr(node):
 	al = []
 	while 1:
 		an = node.GetNextAttrName()
+		#print("Risultato di GetNextAttrName",an[1],"valore",an[0])
 		if not an[1]:
 			a = an[0]
 		else:
@@ -51,8 +52,11 @@ def attr(node):
 		else:
 			pnfo = node.GetAttrInfo(a)
 			if not pnfo[1]:
-				nfo = node.GetAttrInfo(a)[0]
+				nfo = pnfo[0]#node.GetAttrInfo(a)[0]
 			type_string = get_type_string(nfo.type)
+			#print(nfo.size)
+			ritorno=node.ReadAttr(a, nfo.type, 0, None,nfo.size)
+			#print("Ritorno",ritorno)
 			#print("Attr_name:",a,"Type:",type_string,"Size:", nfo.size,"Value:",node.ReadAttr(a, nfo.type, 0, None,nfo.size))
 			al.append((a,("Type:",type_string,"Size:",nfo.size),node.ReadAttr(a, nfo.type, 0, None,nfo.size)))
 			#node.RemoveAttr("Media:Width") <- works
@@ -93,7 +97,7 @@ class NewsItem(BListItem):
 		owner.DrawString(self.name,None)
 		if not self.consistent:
 			sp=BPoint(3,frame.bottom-((frame.bottom-frame.top)/2))
-			ep=BPoint(self.Width()-3,((frame.bottom-frame.top)/2))
+			ep=BPoint(frame.right-3,frame.bottom-(frame.bottom-frame.top)/2)
 			owner.StrokeLine(sp,ep)
 		owner.SetLowColor(255,255,255,255)
 
@@ -142,8 +146,8 @@ class PaperItem(BListItem):
 	def DrawItem(self, owner, frame, complete):
 		self.newnews=False
 		perc=BPath()
+		self.newscount=self.datapath.CountEntries()
 		if self.newscount > 0:
-#			print("num entries:",datapath.CountEntries())
 			self.datapath.Rewind()
 			ret=False
 			while not ret:
@@ -163,6 +167,7 @@ class PaperItem(BListItem):
 		if self.IsSelected() or complete:
 			#color = (200,200,200,255)
 			if self.newnews == True:
+				print("imposto sethighcolor a 250,80,80,255")
 				owner.SetHighColor(250,80,80,255)
 				owner.SetLowColor(200,200,200,255)
 			else:
@@ -196,7 +201,7 @@ class NewsScrollView:
 		self.lv = BListView(rect, name, list_view_type.B_SINGLE_SELECTION_LIST)
 		self.lv.SetSelectionMessage(BMessage(self.NewsSelection))
 		self.lv.SetInvocationMessage(BMessage(self.HiWhat))
-		self.sv = BScrollView(name, self.lv)#, 0x0202,0,False,False, border_style.B_FANCY_BORDER)#|0x1030
+		self.sv = BScrollView(name, self.lv,B_FOLLOW_NONE,0,True,True,border_style.B_FANCY_BORDER)
 		#'NewsScrollView'
 	def topview(self):
 		return self.sv
@@ -212,7 +217,7 @@ class PapersScrollView:
 		self.lv = BListView(rect, name, list_view_type.B_SINGLE_SELECTION_LIST)
 		self.lv.SetSelectionMessage(BMessage(self.PaperSelection))
 		self.lv.SetInvocationMessage(BMessage(self.HiWhat))
-		self.sv = BScrollView(name, self.lv)#, 0x0202,0,False,False, border_style.B_FANCY_BORDER)#|0x1030
+		self.sv = BScrollView(name, self.lv,B_FOLLOW_NONE,0,True,True,border_style.B_FANCY_BORDER)
 		#'PapersScrollView'
 	def topview(self):
 		return self.sv
@@ -311,10 +316,11 @@ class GatorWindow(BWindow):
 		self.box.AddChild(self.getBtn,None)
 		#bf.SetSize(oldSize)
 		self.box.SetFont(bf)
-		self.Paperlist = PapersScrollView(BRect(8 , 56, boxboundsw / 3 , boxboundsh - 8 ), 'NewsPapersScrollView')
+		self.Paperlist = PapersScrollView(BRect(8 , 56, boxboundsw / 3 -20, boxboundsh - 28 ), 'NewsPapersScrollView')
 		self.box.AddChild(self.Paperlist.topview(), None)
-		self.NewsList = NewsScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -8 , boxboundsh / 1.8 ), 'NewsListScrollView')
+		self.NewsList = NewsScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -28 , boxboundsh / 1.8 -20), 'NewsListScrollView')
 		self.box.AddChild(self.NewsList.sv,None)
+		PSframe=self.Paperlist.sv.Frame()
 		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 38)
 		self.outbox_preview=BBox(txtRect,"previewframe",0x0202|0x0404,border_style.B_FANCY_BORDER)
 		self.box.AddChild(self.outbox_preview,None)
@@ -429,8 +435,9 @@ class GatorWindow(BWindow):
 				evalent=BEntry()
 				ret=datapath.GetNextEntry(evalent)
 				if not ret:
-					evalent.GetPath(perc)
-					self.PaperItemConstructor(perc)
+					porc=BPath()
+					evalent.GetPath(porc)
+					self.PaperItemConstructor(porc)
 					
 					
 	def PaperItemConstructor(self, perc):
@@ -459,11 +466,7 @@ class GatorWindow(BWindow):
 						self.NewsItemConstructor(itmEntry)
 
 	def NewsItemConstructor(self,entry):
-		
-	#def __init__(self, title, entry, link, unread):
-		perc = BPath()
-		entry.GetPath(perc)
-		nf = BNode(perc.Path())
+		nf = BNode(entry)
 		attributes = attr(nf)
 		addnews = False
 		blink = False
@@ -518,7 +521,9 @@ class GatorWindow(BWindow):
 			else:
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
+
 		elif msg.what == self.Paperlist.PaperSelection:
+			#Paper selection
 			self.NewsList.lv.MakeEmpty()
 			self.NewsPreView.SelectAll()
 			self.NewsPreView.Clear()
@@ -528,7 +533,9 @@ class GatorWindow(BWindow):
 				tmpNitm.clear()
 			if self.Paperlist.lv.CurrentSelection()>-1:
 				self.gjornaaltolet()
+
 		elif msg.what == self.NewsList.NewsSelection:
+			#News selection
 			curit = self.NewsList.lv.CurrentSelection()
 			if curit>-1:
 				Nitm = self.NewsList.lv.ItemAt(curit)
@@ -540,6 +547,7 @@ class GatorWindow(BWindow):
 					msg.AddString("path",pth.Path())
 					msg.AddBool("unreadValue",False)
 					msg.AddInt32("selected",curit)
+					msg.AddInt32("selectedP",self.Paperlist.lv.CurrentSelection())
 					be_app.WindowAt(0).PostMessage(msg)
 				NFile=BFile(Nitm.entry,0)
 				r,s=NFile.GetSize()
@@ -593,9 +601,9 @@ class GatorWindow(BWindow):
 					givevalue=bytearray(b'\x00')
 				nd.WriteAttr("Unread",ninfo.type,0,givevalue)
 				itto=self.NewsList.lv.ItemAt(msg.FindInt32("selected"))
-				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),True)
+				itto.DrawItem(self.NewsList.lv,self.NewsList.lv.ItemFrame(msg.FindInt32("selected")),False)
 				itto=self.Paperlist.lv.ItemAt(msg.FindInt32("selectedP"))
-				itto.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(msg.FindInt32("selectedP")),True)
+				itto.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(msg.FindInt32("selectedP")),False)
 
 		elif msg.what == self.NewsList.HiWhat:
 			curit=self.NewsList.lv.CurrentSelection()
@@ -614,6 +622,7 @@ class GatorWindow(BWindow):
 			#self.addfeedWindow = AddFeedWindow()
 			#self.addfeedWindow.Show()
 		elif msg.what == 245:
+			# ADD FEED
 			feedaddr=msg.FindString("feed")
 			d=feedparser.parse(feedaddr)
 			if d.feed.has_key('title'):
@@ -629,7 +638,7 @@ class GatorWindow(BWindow):
 					datapath.CreateDirectory(perc.Path()+"/BGator2/Papers/"+dirname,datapath)
 					del perc
 					nd=BNode(entr)
-					givevalue=bytes(feedaddr,'utf-8')
+					givevalue=feedaddr.encode('utf-8')#bytes(feedaddr,'utf-8')
 					nd.WriteAttr("address",TypeConstants.B_STRING_TYPE,0,givevalue)
 					attributes=attr(nd)
 					pirc=BPath()
@@ -641,12 +650,38 @@ class GatorWindow(BWindow):
 				#controlla se esiste cartella chiamata titul&
 				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
 				#se esiste ma non ha tutti gli attributi scrivili
-			#mupd=BMessage(542)
-			#be_app.WindowAt(0).PostMessage(mupd)
 		elif msg.what == 6:
 			#Download Papers News, and eventually update NewsList.lv
-			pass
+			for item in self.Paperlist.lv.Items():
+				#Threadize this
+				perc=BPath()
+				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
+				dirpath=BPath(perc.Path()+"/BGator2/Papers/"+item.name,None,False)
+				datapath=BDirectory(dirpath.Path())
+				stringa=item.address.encode('utf-8')
+				rss = feedparser.parse(stringa.decode('utf-8'))
+				del stringa
+				y=len(rss['entries'])
+				for x in range (y):
+					filename=rss.entries[x].title
+					newfile=BFile()
+					if datapath.CreateFile(dirpath.Path()+"/"+filename,newfile,True):
+						pass
+					else:
+						nd=BNode(dirpath.Path()+"/"+filename)
+						givevalue=bytes(rss.entries[x].title,'utf-8')
+						nd.WriteAttr("title",TypeConstants.B_STRING_TYPE,0,givevalue)
+						givevalue=bytes(rss.entries[x].link,'utf-8')
+						nd.WriteAttr("link",TypeConstants.B_STRING_TYPE,0,givevalue)
+						givevalue=bytearray(b'\x01')
+						nd.WriteAttr("Unread",TypeConstants.B_BOOL_TYPE,0,givevalue)
+						#il file è stato creato ora lo riempio
+				#item.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(self.Paperlist.lv.IndexOf(item)),False)
+			self.Paperlist.lv.Hide()
+			self.Paperlist.lv.Show()
+
 		elif msg.what == 542:
+			# eventually remove this
 			self.UpdatePapers()
 
 		BWindow.MessageReceived(self, msg)
