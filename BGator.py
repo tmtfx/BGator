@@ -117,9 +117,9 @@ class PaperItem(BListItem):
 		self.datapath=BDirectory(path.Path())
 		self.newscount=self.datapath.CountEntries()
 		fon=BFont()
-		value=font_height()
-		fon.GetHeight(value)
-		print(value.ascent,value.descent,value.leading,"is descending the useful value to place the string?")
+		self.font_height_value=font_height()
+		fon.GetHeight(self.font_height_value)
+		#print(value.ascent,value.descent,value.leading,"is descending the useful value to place the string?")
 #		perc=BPath()
 #		if self.newscount > 0:
 ##			print("num entries:",datapath.CountEntries())
@@ -185,7 +185,7 @@ class PaperItem(BListItem):
 		#	self.font = be_plain_font
 		#	owner.SetFont(self.font)
 		#frame.PrintToStream()
-		owner.MovePenTo(5,frame.bottom-5)#2
+		owner.MovePenTo(5,frame.bottom-self.font_height_value.descent)#2
 		if self.newnews:
 			owner.SetFont(be_bold_font)
 			owner.DrawString(self.name,None)#"▶ "+
@@ -534,6 +534,38 @@ class GatorWindow(BWindow):
 			else:
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
+		elif msg.what == 2:
+			#remove feed and relative files and dir
+			cursel=self.Paperlist.lv.CurrentSelection()
+			if cursel>-1:
+				#Deseleziono paperlist
+				self.Paperlist.lv.Select(-1)
+				dirname=self.Paperlist.lv.ItemAt(cursel).path.Path()
+				print("elimino files in",dirname)
+				datapath = BDirectory(dirname)
+				if datapath.CountEntries() > 0:
+					datapath.Rewind()
+					ret=False
+					while not ret:
+						evalent=BEntry()
+						ret=datapath.GetNextEntry(evalent)
+						if not ret:
+							ret_status=evalent.Remove()
+							print(ret_status)
+				if datapath.CountEntries() == 0:
+					ent=BEntry(dirname)
+					ent.Remove()
+				x=len(tmpPitm)
+				i=0
+				remarray=False
+				while i<x:
+					if tmpPitm[i].path.Path() == dirname:
+						remarray=True
+						break
+					i+=1
+				self.Paperlist.lv.RemoveItem(cursel)
+				if remarray:
+					del tmpPitm[i]# <----no di 0 ma del valore giusto!!!!!!
 
 		elif msg.what == self.Paperlist.PaperSelection:
 			#Paper selection
@@ -573,6 +605,7 @@ class GatorWindow(BWindow):
 				self.NewsPreView.SelectAll()
 				self.NewsPreView.Clear()
 		elif msg.what == 9:
+			#mark unread btn
 			curit = self.NewsList.lv.CurrentSelection()
 			if curit>-1:
 				Nitm = self.NewsList.lv.ItemAt(curit)
@@ -588,6 +621,7 @@ class GatorWindow(BWindow):
 					be_app.WindowAt(0).PostMessage(msg)
 
 		elif msg.what == 10:
+			#mark read btn
 			curit = self.NewsList.lv.CurrentSelection()
 			if curit>-1:
 				Nitm = self.NewsList.lv.ItemAt(curit)
@@ -619,6 +653,7 @@ class GatorWindow(BWindow):
 				itto.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(msg.FindInt32("selectedP")),False)
 
 		elif msg.what == self.NewsList.HiWhat:
+			#open link
 			curit=self.NewsList.lv.CurrentSelection()
 			if curit>-1:
 				itto=self.NewsList.lv.ItemAt(curit)
@@ -627,26 +662,30 @@ class GatorWindow(BWindow):
 					t.run()
 			
 		elif msg.what == self.Paperlist.HiWhat:
+			curit=self.Paperlist.lv.CurrentSelection()
+			if curit>-1:
+				ittp=self.Paperlist.lv.ItemAt(curit)
+				print(ittp.address)
 			print("window with details and eventually per paper settings or open tracker at its path") #like pulse specified update 
 		
 		elif msg.what == 1:
+			#open add feed window
 			self.tmpWind.append(AddFeedWindow())
 			self.tmpWind[-1].Show()
-			#self.addfeedWindow = AddFeedWindow()
-			#self.addfeedWindow.Show()
+
 		elif msg.what == 245:
 			# ADD FEED
 			feedaddr=msg.FindString("feed")
+			#TODO: externalize on a "def" and threadize this, Show() progress on a BStringView and on a BStatusBar then Hide() them
 			d=feedparser.parse(feedaddr)
 			if d.feed.has_key('title'):
 				dirname=d.feed.title
 				perc=BPath()
 				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
-				#perc.Path()
 				datapath=BDirectory(perc.Path()+"/BGator2/Papers/"+dirname)
 				entr=BEntry(perc.Path()+"/BGator2/Papers/"+dirname)
 				if entr.Exists():
-					print("la cartella esiste")
+					print("la cartella esiste") #TODO BAlert a better notification
 				else:
 					datapath.CreateDirectory(perc.Path()+"/BGator2/Papers/"+dirname,datapath)
 					del perc
@@ -660,9 +699,11 @@ class GatorWindow(BWindow):
 						if element[0] == "address":
 							tmpPitm.append(PaperItem(pirc,element[2][0]))
 							self.Paperlist.lv.AddItem(tmpPitm[-1])
+							be_app.WindowAt(0).PostMessage(6)
 				#controlla se esiste cartella chiamata titul&
 				#se esiste ma gli attributi non corrispondono, chiedere cosa fare
 				#se esiste ma non ha tutti gli attributi scrivili
+				
 		elif msg.what == 6:
 			#parallel=[]
 			#Download Papers News, and eventually update NewsList.lv
