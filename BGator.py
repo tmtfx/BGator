@@ -900,6 +900,10 @@ class GatorWindow(BWindow):
 				y=len(rss['entries'])
 				for x in range (y):
 					filename=rss.entries[x].title
+					try:
+						published = rss.entries[x].published_parsed
+					except:
+						published = None
 					newfile=BFile()
 					if datapath.CreateFile(dirpath.Path()+"/"+filename,newfile,True):
 						pass
@@ -911,6 +915,8 @@ class GatorWindow(BWindow):
 						nd.WriteAttr("link",TypeConstants.B_STRING_TYPE,0,givevalue)
 						givevalue=bytearray(b'\x01')
 						nd.WriteAttr("Unread",TypeConstants.B_BOOL_TYPE,0,givevalue)
+						if published != None:
+							print(published)
 				be_app.WindowAt(0).PostMessage(542)
 	
 	def FrameResized(self,x,y):
