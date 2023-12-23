@@ -15,7 +15,7 @@ from Be import AppDefs
 from Be import Entry
 from Be.Entry import entry_ref, get_ref_for_path
 
-import configparser,webbrowser, feedparser, struct
+import configparser,re,webbrowser, feedparser, struct, datetime
 from threading import Thread
 
 Config=configparser.ConfigParser()
@@ -888,6 +888,10 @@ class GatorWindow(BWindow):
 			self.Paperlist.lv.Show()
 
 		BWindow.MessageReceived(self, msg)
+
+	def remove_html_tags(self,data):
+		p = re.compile(r'<.*?>')
+		return p.sub('', data)
 		
 	def DownloadNews(self,item):
 				perc=BPath()
@@ -900,23 +904,58 @@ class GatorWindow(BWindow):
 				y=len(rss['entries'])
 				for x in range (y):
 					filename=rss.entries[x].title
-					try:
-						published = rss.entries[x].published_parsed
-					except:
-						published = None
 					newfile=BFile()
 					if datapath.CreateFile(dirpath.Path()+"/"+filename,newfile,True):
 						pass
 					else:
 						nd=BNode(dirpath.Path()+"/"+filename)
-						givevalue=bytes(rss.entries[x].title,'utf-8')
-						nd.WriteAttr("title",TypeConstants.B_STRING_TYPE,0,givevalue)
-						givevalue=bytes(rss.entries[x].link,'utf-8')
-						nd.WriteAttr("link",TypeConstants.B_STRING_TYPE,0,givevalue)
+						try:
+							givevalue=bytes(rss.entries[x].title,'utf-8')
+						except:
+							givevalue=bytes("No title",'utf-8')
+						finally:
+							nd.WriteAttr("title",TypeConstants.B_STRING_TYPE,0,givevalue)
+						try:
+							givevalue=bytes(rss.entries[x].link,'utf-8')
+						except:
+							givevalue=bytes("no link",'utf-8')
+						else:
+							nd.WriteAttr("link",TypeConstants.B_STRING_TYPE,0,givevalue)
 						givevalue=bytearray(b'\x01')
 						nd.WriteAttr("Unread",TypeConstants.B_BOOL_TYPE,0,givevalue)
-						if published != None:
-							print(published)
+						try:
+							givevalue=bytes(rss.entries[x].author,'utf-8')
+						except:
+							givevalue=bytes("No author",'utf-8')
+						finally:
+							nd.WriteAttr("author",TypeConstants.B_STRING_TYPE,0,givevalue)
+						try:
+							published = rss.entries[x].published_parsed
+						except:
+							published = None
+						else:
+						#if published != None:
+							#print(published)# TODO There's a difference of 1 hour between time parsed from feedrss and what is written and read in the filesystem attribute
+							################## does this means I didn't care of timezone? or something else? legal hour?
+							asd=datetime.datetime(published.tm_year,published.tm_mon,published.tm_mday,published.tm_hour,published.tm_min,published.tm_sec)
+							#print(rss.entries[x].title,asd)
+							asd_sec = round((asd - datetime.datetime(1970, 1, 1,0,0,0)).total_seconds()) 
+							pass_time = struct.pack('q',asd_sec)
+							nd.WriteAttr("published",TypeConstants.B_TIME_TYPE,0,pass_time)
+#							try:
+#									rssdate=rss.entries[x].date
+#									date,timeall= rssdate.split('T')
+#									time,all= timeall.split('+')
+#									zornade=(date+' '+time)
+#							except:
+#									now=datetime.datetime.now()
+#									zornade=(str(now.year)+'-'+str(now.month)+'-'+str(now.day)+' '+str(now.hour)+':'+str(now.minute)+':'+str(now.second))
+						try:
+							texttowrite=bytes(self.remove_html_tags(rss.entries[x].summary_detail.value),'utf-8')
+						except:
+							Texttowrite=bytes("No summary available",'utf-8')
+						finally:
+							newfile.Write(texttowrite)
 				be_app.WindowAt(0).PostMessage(542)
 	
 	def FrameResized(self,x,y):
