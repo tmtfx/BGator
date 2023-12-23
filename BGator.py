@@ -2,6 +2,7 @@ from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparat
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
 from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants, BScrollBar
 from Be.GraphicsDefs import *
+from Be.Menu import menu_info,get_menu_info
 from Be.FindDirectory import *
 from Be.View import B_FOLLOW_NONE,set_font_mask
 from Be.Alert import alert_type
@@ -83,12 +84,6 @@ class NewsItem(BListItem):
 			owner.SetLowColor(200,200,200,255)
 			owner.FillRect(frame)
 		owner.SetHighColor(0,0,0,0)
-		#if self.color == (200,0,0,0):
-		#	self.font = be_bold_font
-		#	owner.SetFont(self.font)
-		#else:	
-		#	self.font = be_plain_font
-		#	owner.SetFont(self.font)
 		owner.MovePenTo(5,frame.bottom-5)
 		if self.unread:
 			owner.SetFont(be_bold_font)
@@ -120,25 +115,7 @@ class PaperItem(BListItem):
 		self.font_height_value=font_height()
 		fon.GetHeight(self.font_height_value)
 		#print(value.ascent,value.descent,value.leading,"is descending the useful value to place the string?")
-#		perc=BPath()
-#		if self.newscount > 0:
-##			print("num entries:",datapath.CountEntries())
-#			self.datapath.Rewind()
-#			ret=False
-#			while not ret:
-#				evalent=BEntry()
-#				ret=self.datapath.GetNextEntry(evalent)
-#				if not ret:
-#					evalent.GetPath(perc)
-#					nf=BNode(perc.Path())
-#					attributes=attr(nf)
-#					for element in attributes:
-#						if element[0] == "Unread":
-#							unr=element[2][0]
-#							if unr:
-#								ret=True
-#								self.newnews=True
-#								break
+
 
 		BListItem.__init__(self)
 		
@@ -167,7 +144,6 @@ class PaperItem(BListItem):
 		if self.IsSelected() or complete:
 			#color = (200,200,200,255)
 			if self.newnews == True:
-				print("imposto sethighcolor a 250,80,80,255")
 				owner.SetHighColor(250,80,80,255)
 				owner.SetLowColor(200,200,200,255)
 			else:
@@ -176,15 +152,6 @@ class PaperItem(BListItem):
 			owner.FillRect(frame)
 			owner.SetHighColor(0,0,0,255)
 			owner.SetLowColor(255,255,255,255)
-			#self.color=self.nocolor
-		#owner.SetHighColor(self.color)
-		#if self.color == (200,0,0,0):
-		#	self.font = be_bold_font
-		#	owner.SetFont(self.font)
-		#else:	
-		#	self.font = be_plain_font
-		#	owner.SetFont(self.font)
-		#frame.PrintToStream()
 		owner.MovePenTo(5,frame.bottom-self.font_height_value.descent)#2
 		if self.newnews:
 			owner.SetFont(be_bold_font)
@@ -519,6 +486,8 @@ class GatorWindow(BWindow):
 			self.NewsList.lv.DeselectAll()
 			self.NewsList.lv.RemoveItems(0,self.NewsList.lv.CountItems()) #azzera newslist
 			self.NewsList.lv.ScrollToSelection()
+			#### check sort type
+			marked=self.savemenu.FindMarked().Label()
 			
 			curpaper=self.Paperlist.lv.ItemAt(self.Paperlist.lv.CurrentSelection())
 			x=curpaper.datapath.CountEntries()
@@ -529,7 +498,12 @@ class GatorWindow(BWindow):
 					itmEntry=BEntry()
 					rit=curpaper.datapath.GetNextEntry(itmEntry)
 					if not rit:
-						self.NewsItemConstructor(itmEntry)
+						if marked == "By Name":
+							self.NewsItemConstructor(itmEntry)
+						if marked == "By Unread": #TODO
+							self.NewsItemConstructor(itmEntry)
+						if marked == "By Date": #TODO
+							self.NewsItemConstructor(itmEntry)
 
 	def NewsItemConstructor(self,entry):
 		nf = BNode(entry)
@@ -849,34 +823,8 @@ class GatorWindow(BWindow):
 			#parallel=[]
 			#Download Papers News, and eventually update NewsList.lv
 			for item in self.Paperlist.lv.Items():
-			#(target=openlink,args=(itto.link,))
 				Thread(target=self.DownloadNews,args=(item,)).start()
-				#parallel.append(Thread(target=self.DownloadNews,args=(item,)))
-				#parallel[-1].setDaemon(True)
-				#parallel[-1].run()#this not exits until finished
-				#parallel[-1].start()
-#				perc=BPath()
-#				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
-#				dirpath=BPath(perc.Path()+"/BGator2/Papers/"+item.name,None,False)
-#				datapath=BDirectory(dirpath.Path())
-#				stringa=item.address.encode('utf-8')
-#				rss = feedparser.parse(stringa.decode('utf-8'))
-#				del stringa
-#				y=len(rss['entries'])
-#				for x in range (y):
-#					filename=rss.entries[x].title
-#					newfile=BFile()
-#					if datapath.CreateFile(dirpath.Path()+"/"+filename,newfile,True):
-#						pass
-#					else:
-#						nd=BNode(dirpath.Path()+"/"+filename)
-#						givevalue=bytes(rss.entries[x].title,'utf-8')
-#						nd.WriteAttr("title",TypeConstants.B_STRING_TYPE,0,givevalue)
-#						givevalue=bytes(rss.entries[x].link,'utf-8')
-#						nd.WriteAttr("link",TypeConstants.B_STRING_TYPE,0,givevalue)
-#						givevalue=bytearray(b'\x01')
-#						nd.WriteAttr("Unread",TypeConstants.B_BOOL_TYPE,0,givevalue)
-						#il file è stato creato ora lo riempio
+
 				#item.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(self.Paperlist.lv.IndexOf(item)),False)
 			self.Paperlist.lv.Hide()
 			self.Paperlist.lv.Show()
