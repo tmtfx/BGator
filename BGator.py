@@ -327,12 +327,12 @@ class GatorWindow(BWindow):
 		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 38)
 		self.outbox_preview=BBox(txtRect,"previewframe",0x0202|0x0404,border_style.B_FANCY_BORDER)
 		self.box.AddChild(self.outbox_preview,None)
-		innerRect= BRect(8,8,txtRect.Width()-28,txtRect.Height())
-		self.NewsPreView = BTextView(BRect(2,2, self.outbox_preview.Bounds().Width()-2,self.outbox_preview.Bounds().Height()-2), 'NewsTxTView', innerRect , B_FOLLOW_NONE,2000000)
+		innerRect= BRect(8,8,txtRect.Width()-30,txtRect.Height())
+		self.NewsPreView = BTextView(BRect(2,2, self.outbox_preview.Bounds().Width()-20,self.outbox_preview.Bounds().Height()-2), 'NewsTxTView', innerRect , B_FOLLOW_NONE,2000000)
 		self.NewsPreView.MakeEditable(False)
-		NewsPreView_bounds=self.NewsPreView.Bounds()
-		self.scroller=BScrollBar(BRect(NewsPreView_bounds.right-20,NewsPreView_bounds.top,NewsPreView_bounds.right,NewsPreView_bounds.bottom),'NewsPreView_ScrollBar',self.NewsPreView,0.0,0.0,orientation.B_VERTICAL)
-		self.NewsPreView.AddChild(self.scroller,None)
+		NewsPreView_bounds=self.outbox_preview.Bounds()
+		self.scroller=BScrollBar(BRect(NewsPreView_bounds.right-21,NewsPreView_bounds.top+1.2,NewsPreView_bounds.right-1.4,NewsPreView_bounds.bottom-1.6),'NewsPreView_ScrollBar',self.NewsPreView,0.0,0.0,orientation.B_VERTICAL)
+		self.outbox_preview.AddChild(self.scroller,None)
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 		perc.Path()
@@ -561,13 +561,15 @@ class GatorWindow(BWindow):
 			else:
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
+		elif msg.what == 3:
+			about = BAlert('awin', 'BGator v. 1.9.0 alpha preview', 'Ok', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_INFO_ALERT)
+			about.Go()
 		elif msg.what == 2:
 			#remove feed and relative files and dir
 			cursel=self.Paperlist.lv.CurrentSelection()
 			if cursel>-1:
 				self.Paperlist.lv.Select(-1)
 				dirname=self.Paperlist.lv.ItemAt(cursel).path.Path()
-				print("elimino files in",dirname)
 				datapath = BDirectory(dirname)
 				if datapath.CountEntries() > 0:
 					datapath.Rewind()
@@ -577,7 +579,6 @@ class GatorWindow(BWindow):
 						ret=datapath.GetNextEntry(evalent)
 						if not ret:
 							ret_status=evalent.Remove()
-							print(ret_status)
 				if datapath.CountEntries() == 0:
 					ent=BEntry(dirname)
 					ent.Remove()
@@ -603,7 +604,6 @@ class GatorWindow(BWindow):
 				datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
 			ent.GetPath(perc)
 			confile=BPath(perc.Path()+'/config.ini',None,False)
-			print(confile.Path())
 			ent=BEntry(confile.Path())
 			if ent.Exists():
 				cfgfile = open(confile.Path(),'w')
@@ -626,9 +626,7 @@ class GatorWindow(BWindow):
 			if not ent.Exists():
 				datapath.CreateDirectory(perc.Path()+"/BGator2", datapath)
 			ent.GetPath(perc)
-			print(perc.Path())
 			confile=BPath(perc.Path()+'/config.ini',None,False)
-			print(confile.Path())
 			ent=BEntry(confile.Path())
 			if ent.Exists():
 				cfgfile = open(confile.Path(),'w')
@@ -776,7 +774,7 @@ class GatorWindow(BWindow):
 					t = Thread(target=openlink,args=(itto.link,))
 					t.run()
 			
-		elif msg.what == self.Paperlist.HiWhat:
+		elif msg.what == self.Paperlist.HiWhat: #TODO
 			curit=self.Paperlist.lv.CurrentSelection()
 			if curit>-1:
 				ittp=self.Paperlist.lv.ItemAt(curit)
@@ -797,10 +795,13 @@ class GatorWindow(BWindow):
 				dirname=d.feed.title
 				perc=BPath()
 				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
-				datapath=BDirectory(perc.Path()+"/BGator2/Papers/"+dirname)
-				entr=BEntry(perc.Path()+"/BGator2/Papers/"+dirname)
+				folder=perc.Path()+"/BGator2/Papers/"+dirname
+				datapath=BDirectory(folder)
+				entr=BEntry(folder)
 				if entr.Exists():
-					print("la cartella esiste") #TODO BAlert a better notification
+					saytxt="The folder "+folder+" is present, please remove it and add the feed again"
+					about = BAlert('Ops', saytxt, 'Ok', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
+					about.Go()
 				else:
 					datapath.CreateDirectory(perc.Path()+"/BGator2/Papers/"+dirname,datapath)
 					del perc
