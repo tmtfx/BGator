@@ -250,7 +250,7 @@ class GatorWindow(BWindow):
 		self.bar = BMenuBar(bckgnd_bounds, 'Bar')
 		x, barheight = self.bar.GetPreferredSize()
 		self.box = BBox(BRect(0,barheight,bckgnd_bounds.Width(),bckgnd_bounds.Height()),"Underbox",0x0202|0x0404,border_style.B_FANCY_BORDER)
-		
+		self.cres=0
 		perc=BPath()
 		find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 		perc.Path()
@@ -285,9 +285,9 @@ class GatorWindow(BWindow):
 			Config.read(confile.Path())
 		for menu, items in self.Menus:
 			if menu == "Sort":
-				savemenu = True
+				self.set_savemenu = True
 			else:
-				savemenu = False
+				self.set_savemenu = False
 			menu = BMenu(menu)
 			for k, name in items:
 				if k is None:
@@ -301,7 +301,7 @@ class GatorWindow(BWindow):
 						elif name == "By Date" and sort == "3":
 							mitm.SetMarked(True)
 						menu.AddItem(mitm)
-			if savemenu:
+			if self.set_savemenu:
 				self.savemenu = menu
 				self.bar.AddItem(menu)
 			else:	
@@ -311,29 +311,27 @@ class GatorWindow(BWindow):
 		oldSize=bf.Size()
 		bf.SetSize(32)
 		#self.box.SetFont(bf)
-		self.addBtn = BButton(BRect(8,8,58,48),'AddButton','⊕',BMessage(1))
+		self.addBtn = BButton(BRect(8,8,68,58),'AddButton','⊕',BMessage(1))
 		self.addBtn.SetFont(bf)
 		self.box.AddChild(self.addBtn,None)
-		self.remBtn = BButton(BRect(62,8,112,48),'RemoveButton','⊖',BMessage(2))
+		self.remBtn = BButton(BRect(72,8,132,58),'RemoveButton','⊖',BMessage(2))
 		self.remBtn.SetFont(bf)
 		self.box.AddChild(self.remBtn,None)
 		boxboundsw=self.box.Bounds().Width()
 		boxboundsh=self.box.Bounds().Height()
-		self.getBtn = BButton(BRect(116,8,boxboundsw / 3,48),'GetNewsButton','⇩',BMessage(6))
+		self.getBtn = BButton(BRect(136,8,boxboundsw / 3,58),'GetNewsButton','⇩',BMessage(6))
 		self.getBtn.SetFont(bf)
-		self.progress = BStatusBar(BRect(boxboundsw / 3+6,8, boxboundsw - 12, 48),'progress',None, None)
-		#self.progress.SetMaxValue(self.list.lv.CountItems())#-2.0)
-		self.infostring= BStringView(BRect(boxboundsw/3+6,8,boxboundsw-12,28),"info","")
+		self.progress = BStatusBar(BRect(boxboundsw / 3+6,8, boxboundsw - 12, 68),'progress',None, None)
+		self.infostring= BStringView(BRect(boxboundsw/3+6,8,boxboundsw-12,28),"info",None)
 		self.box.AddChild(self.progress,None)
 		self.box.AddChild(self.infostring,None)
 		self.box.AddChild(self.getBtn,None)
 		#bf.SetSize(oldSize)
 		self.box.SetFont(bf)
-		self.Paperlist = PapersScrollView(BRect(8 , 56, boxboundsw / 3 -20, boxboundsh - 28 ), 'NewsPapersScrollView')
+		self.Paperlist = PapersScrollView(BRect(8 , 70, boxboundsw / 3 -20, boxboundsh - 28 ), 'NewsPapersScrollView')
 		self.box.AddChild(self.Paperlist.topview(), None)
-		self.NewsList = NewsScrollView(BRect(8 + boxboundsw / 3 , 56, boxboundsw -28 , boxboundsh / 1.8 ), 'NewsListScrollView')
+		self.NewsList = NewsScrollView(BRect(8 + boxboundsw / 3 , 70, boxboundsw -28 , boxboundsh / 1.8 ), 'NewsListScrollView')
 		self.box.AddChild(self.NewsList.sv,None)
-		PSframe=self.Paperlist.sv.Frame()
 		txtRect=BRect(8 + boxboundsw / 3, boxboundsh / 1.8 + 8,boxboundsw -8,boxboundsh - 38)
 		self.outbox_preview=BBox(txtRect,"previewframe",0x0202|0x0404,border_style.B_FANCY_BORDER)
 		self.box.AddChild(self.outbox_preview,None)
@@ -497,7 +495,8 @@ class GatorWindow(BWindow):
 			self.NewsList.lv.RemoveItems(0,self.NewsList.lv.CountItems()) #azzera newslist
 			self.NewsList.lv.ScrollToSelection()
 			#### check sort type
-			marked=self.savemenu.FindMarked().Label()
+			if self.set_savemenu:
+				marked=self.savemenu.FindMarked().Label()
 			
 			curpaper=self.Paperlist.lv.ItemAt(self.Paperlist.lv.CurrentSelection())
 			x=curpaper.datapath.CountEntries()
@@ -508,11 +507,15 @@ class GatorWindow(BWindow):
 					itmEntry=BEntry()
 					rit=curpaper.datapath.GetNextEntry(itmEntry)
 					if not rit:
-						if marked == "By Name":
-							self.NewsItemConstructor(itmEntry)
-						if marked == "By Unread": #TODO
-							self.NewsItemConstructor(itmEntry)
-						if marked == "By Date": #TODO
+						if self.set_savemenu:
+							if marked == "By Name":
+								self.NewsItemConstructor(itmEntry)
+							if marked == "By Unread": #TODO
+								self.NewsItemConstructor(itmEntry)
+							if marked == "By Date": #TODO
+								self.NewsItemConstructor(itmEntry)
+						else:
+							#this exist until menu changes its name to Sort without brackets
 							self.NewsItemConstructor(itmEntry)
 
 	def NewsItemConstructor(self,entry):
@@ -835,6 +838,7 @@ class GatorWindow(BWindow):
 			#be_app.WindowAt(0).PostMessage(BMessage(1992))
 			self.infostring.SetText("Updating news, please wait...")
 			self.progress.SetMaxValue(self.Paperlist.lv.CountItems()*100+self.Paperlist.lv.CountItems())
+			self.cres=0
 			#parallel=[]
 			#Download Papers News, and eventually update NewsList.lv
 			for item in self.Paperlist.lv.Items():
@@ -853,9 +857,10 @@ class GatorWindow(BWindow):
 			d = msg.FindFloat("delta")
 			self.progress.Update(d,None,None)
 		elif msg.what == 1991:
-			self.progress.Reset(None,None)
-			emptystring = ""
-			self.infostring.SetText(emptystring)
+			self.cres+=1
+			if self.cres == self.Paperlist.lv.CountItems():
+				self.progress.Reset(None,None)
+				self.infostring.SetText(None)
 		#elif msg.what == 1992:
 		#	self.progress.Reset(None,None)
 		#	self.progress.Show()
@@ -939,7 +944,6 @@ class GatorWindow(BWindow):
 					be_app.WindowAt(0).PostMessage(mxg)
 				be_app.WindowAt(0).PostMessage(542)
 				be_app.WindowAt(0).PostMessage(1991)
-				
 	
 	def FrameResized(self,x,y):
 		#self.ResizeToPreferred()
