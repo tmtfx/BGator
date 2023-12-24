@@ -840,10 +840,10 @@ class GatorWindow(BWindow):
 			self.progress.SetMaxValue(self.Paperlist.lv.CountItems()*100+self.Paperlist.lv.CountItems())
 			self.cres=0
 			#parallel=[]
+			self.Paperlist.lv.DeselectAll()
 			#Download Papers News, and eventually update NewsList.lv
 			for item in self.Paperlist.lv.Items():
 				Thread(target=self.DownloadNews,args=(item,)).start()
-
 				#item.DrawItem(self.Paperlist.lv,self.Paperlist.lv.ItemFrame(self.Paperlist.lv.IndexOf(item)),False)
 			self.Paperlist.lv.Hide()
 			self.Paperlist.lv.Show()
@@ -861,10 +861,6 @@ class GatorWindow(BWindow):
 			if self.cres == self.Paperlist.lv.CountItems():
 				self.progress.Reset(None,None)
 				self.infostring.SetText(None)
-		#elif msg.what == 1992:
-		#	self.progress.Reset(None,None)
-		#	self.progress.Show()
-		#	self.infostring.Show()
 			
 		BWindow.MessageReceived(self, msg)
 
