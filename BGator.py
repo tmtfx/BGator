@@ -263,18 +263,20 @@ class GatorWindow(BWindow):
 			try:
 				sort=ConfigSectionMap("General")['sort']
 			except:
+				print("no sezione, scrivo sort 1")
 				cfgfile = open(confile.Path(),'w')
 				Config.add_section('General')
 				Config.set('General','sort', "1")
-				sort=1
+				sort="1"
 				Config.write(cfgfile)
 				cfgfile.close()
 				Config.read(confile.Path())
 		else:
+			print("no file, scrivo sort 1")
 			cfgfile = open(confile.Path(),'w')
 			Config.add_section('General')
 			Config.set('General','sort', "1")
-			sort=1
+			sort="1"
 			Config.write(cfgfile)
 			cfgfile.close()
 			Config.read(confile.Path())
