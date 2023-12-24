@@ -1,6 +1,6 @@
 from Be import BApplication, BWindow, BView, BMenu,BMenuBar, BMenuItem, BSeparatorItem, BMessage, window_type, B_NOT_RESIZABLE, B_QUIT_ON_WINDOW_CLOSE
 from Be import BButton, BTextView, BTextControl, BAlert, BListItem, BListView, BScrollView, BRect, BBox, BFont, InterfaceDefs, BPath, BDirectory, BEntry
-from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants, BScrollBar
+from Be import BNode, BStringItem, BFile, BPoint, BLooper, BHandler, BTextControl, TypeConstants, BScrollBar, BStatusBar, BStringView
 from Be.GraphicsDefs import *
 from Be.Menu import menu_info,get_menu_info
 from Be.FindDirectory import *
@@ -76,6 +76,9 @@ class NewsItem(BListItem):
 		self.entry = entry
 		self.link = link
 		self.unread = unread
+		fon=BFont()
+		self.font_height_value=font_height()
+		fon.GetHeight(self.font_height_value)
 		BListItem.__init__(self)
 		
 	def DrawItem(self, owner, frame, complete):
@@ -84,7 +87,7 @@ class NewsItem(BListItem):
 			owner.SetLowColor(200,200,200,255)
 			owner.FillRect(frame)
 		owner.SetHighColor(0,0,0,0)
-		owner.MovePenTo(5,frame.bottom-5)
+		owner.MovePenTo(5,frame.bottom-self.font_height_value.descent)#frame.bottom-5)
 		if self.unread:
 			owner.SetFont(be_bold_font)
 		else:
@@ -234,7 +237,7 @@ class GatorWindow(BWindow):
 	tmpNitm=[]
 	tmpWind=[]
 	Menus = (
-		('File', ((1, 'Add Paper'),(2, 'Remove Paper'),(None, None),(int(AppDefs.B_QUIT_REQUESTED), 'Quit'))),('News', ((6, 'Get News'),(4, 'Mark all as read'),(5, 'Clear news'))),('Sort', ((40, 'By Name'),(41, 'By Unread'),(42, 'By Date'))),
+		('File', ((1, 'Add Paper'),(2, 'Remove Paper'),(None, None),(int(AppDefs.B_QUIT_REQUESTED), 'Quit'))),('News', ((6, 'Get News'),(4, 'Mark all as read'),(5, '(Clear news)'))),('(Sort)', ((40, 'By Name'),(41, 'By Unread'),(42, 'By Date'))),
 		('Help', ((8, 'Help'),(3, 'About')))
 		)
 	def __init__(self):
@@ -318,6 +321,11 @@ class GatorWindow(BWindow):
 		boxboundsh=self.box.Bounds().Height()
 		self.getBtn = BButton(BRect(116,8,boxboundsw / 3,48),'GetNewsButton','⇩',BMessage(6))
 		self.getBtn.SetFont(bf)
+		self.progress = BStatusBar(BRect(boxboundsw / 3+6,8, boxboundsw - 12, 48),'progress',None, None)
+		#self.progress.SetMaxValue(self.list.lv.CountItems())#-2.0)
+		self.infostring= BStringView(BRect(boxboundsw/3+6,8,boxboundsw-12,28),"info","")
+		self.box.AddChild(self.progress,None)
+		self.box.AddChild(self.infostring,None)
 		self.box.AddChild(self.getBtn,None)
 		#bf.SetSize(oldSize)
 		self.box.SetFont(bf)
@@ -564,7 +572,7 @@ class GatorWindow(BWindow):
 				risp = BAlert('lol', 'If you think so...', 'Poor me', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_WARNING_ALERT)
 				risp.Go()
 		elif msg.what == 3:
-			about = BAlert('awin', 'BGator v. 1.9.0 alpha preview', 'Ok', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_INFO_ALERT)
+			about = BAlert('awin', 'BGator v. 1.9.0 alpha preview by TmTFx', 'Ok', None,None,InterfaceDefs.B_WIDTH_AS_USUAL,alert_type.B_INFO_ALERT)
 			about.Go()
 		elif msg.what == 2:
 			#remove feed and relative files and dir
@@ -790,6 +798,7 @@ class GatorWindow(BWindow):
 
 		elif msg.what == 245:
 			# ADD FEED
+			#be_app.WindowAt(0).PostMessage(BMessage(1992))
 			feedaddr=msg.FindString("feed")
 			#TODO: externalize on a "def" and threadize this, Show() progress on a BStringView and on a BStatusBar then Hide() them
 			d=feedparser.parse(feedaddr)
@@ -823,6 +832,9 @@ class GatorWindow(BWindow):
 				#se esiste ma non ha tutti gli attributi scrivili
 				
 		elif msg.what == 6:
+			#be_app.WindowAt(0).PostMessage(BMessage(1992))
+			self.infostring.SetText("Updating news, please wait...")
+			self.progress.SetMaxValue(self.Paperlist.lv.CountItems()*100+self.Paperlist.lv.CountItems())
 			#parallel=[]
 			#Download Papers News, and eventually update NewsList.lv
 			for item in self.Paperlist.lv.Items():
@@ -837,7 +849,18 @@ class GatorWindow(BWindow):
 			#self.UpdatePapers()
 			self.Paperlist.lv.Hide()
 			self.Paperlist.lv.Show()
-
+		elif msg.what == 1990:
+			d = msg.FindFloat("delta")
+			self.progress.Update(d,None,None)
+		elif msg.what == 1991:
+			self.progress.Reset(None,None)
+			emptystring = ""
+			self.infostring.SetText(emptystring)
+		#elif msg.what == 1992:
+		#	self.progress.Reset(None,None)
+		#	self.progress.Show()
+		#	self.infostring.Show()
+			
 		BWindow.MessageReceived(self, msg)
 
 	def remove_html_tags(self,data):
@@ -845,12 +868,18 @@ class GatorWindow(BWindow):
 		return p.sub('', data)
 		
 	def DownloadNews(self,item):
+				# TODO inserire un lock per non sballare i valori di progress
+				#self.progress.Reset(None,None)
 				perc=BPath()
 				find_directory(directory_which.B_USER_NONPACKAGED_DATA_DIRECTORY,perc,False,None)
 				dirpath=BPath(perc.Path()+"/BGator2/Papers/"+item.name,None,False)
 				datapath=BDirectory(dirpath.Path())
 				stringa=item.address.encode('utf-8')
 				rss = feedparser.parse(stringa.decode('utf-8'))
+				valueperentry=100/(len(rss.entries)+1)
+				mxg=BMessage(1990)
+				mxg.AddFloat("delta",valueperentry)
+				be_app.WindowAt(0).PostMessage(mxg)
 				del stringa
 				y=len(rss['entries'])
 				for x in range (y):
@@ -907,11 +936,14 @@ class GatorWindow(BWindow):
 							Texttowrite=bytes("No summary available",'utf-8')
 						finally:
 							newfile.Write(texttowrite)
+					be_app.WindowAt(0).PostMessage(mxg)
 				be_app.WindowAt(0).PostMessage(542)
+				be_app.WindowAt(0).PostMessage(1991)
+				
 	
 	def FrameResized(self,x,y):
 		#self.ResizeToPreferred()
-		self.ResizeTo(800,650)
+		self.ResizeTo(974,650)
 
 
 	def QuitRequested(self):
